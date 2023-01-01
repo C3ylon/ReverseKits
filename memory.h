@@ -7,7 +7,7 @@
 extern DWORD pid;
 extern HANDLE hProcess;
 
-int InitByPid(DWORD pid);
+int InitByPid(DWORD _pid);
 int InitByWindowNameW(WCHAR *WindowName);
 
 

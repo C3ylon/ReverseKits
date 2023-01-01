@@ -6,7 +6,7 @@ HANDLE hProcess;
 static BOOL ISINITIALIZED;
 static DWORD ThreadID;
 
-BOOL Initialize(DWORD _pid)
+BOOL InitByPid(DWORD _pid)
 {
     pid = _pid;
     hProcess = OpenProcess(PROCESS_ALL_ACCESS, 0, pid);
