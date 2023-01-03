@@ -1,5 +1,5 @@
-#ifndef __LOG_H
-#define __LOG_H
+#ifndef LOG_H
+#define LOG_H
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -7,11 +7,11 @@
 
 
 #ifndef TRUE
-  #define TRUE 1
+    #define TRUE 1
 #endif
 
 #ifndef FALSE
-  #define FALSE 0
+    #define FALSE 0
 #endif
 
 typedef int BOOL;

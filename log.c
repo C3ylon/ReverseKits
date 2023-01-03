@@ -68,27 +68,27 @@ void log_log(int level, const char *file, int line, const char *fmt, ...) {
 
     if (!L.quiet && level >= L.level) {
 
-      #ifdef PRINT_TO_CONSOLE
+    #ifdef PRINT_TO_CONSOLE
         init_event(&ev, stderr);
-      #else
+    #else
         FILE *fp = fopen("./log.txt", "a+");
         if( !fp ) {
             return;
         }
         init_event(&ev, fp);
-      #endif
+    #endif
 
         va_start(ev.ap, fmt);
 
-      #ifdef SIMPLE_PRINT_FORMAT
+    #ifdef SIMPLE_PRINT_FORMAT
         simple_print(&ev);
-      #else
+    #else
         default_print(&ev);
-      #endif
+    #endif
 
         va_end(ev.ap);
-      #ifndef PRINT_TO_CONSOLE
+    #ifndef PRINT_TO_CONSOLE
         fclose(ev.fp);
-      #endif
+    #endif
     }
 }
