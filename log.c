@@ -34,12 +34,6 @@ static void default_print(log_Event *ev) {
 }
 
 
-const char* log_level_string(int level) {
-    return level_strings[level];
-}
-
-
-
 void log_set_level(int level) {
     L.level = level;
 }
