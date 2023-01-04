@@ -1,5 +1,5 @@
-#ifndef MEMORYHACK_H
-#define MEMORYHACK_H
+#ifndef MEMORY_HACK__H_
+#define MEMORY_HACK__H_
 
 #include <stdlib.h>
 #include <Windows.h>
