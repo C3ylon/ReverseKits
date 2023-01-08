@@ -5,6 +5,22 @@
 #include <stdarg.h>
 #include <time.h>
 
+// =====================mode switch===========================
+// #define LOG_PATH "xxx\\xxx"
+#ifndef LOG_PATH
+    #define LOG_PATH ".\\log.txt"
+#endif
+
+// if define PRINT_TO_CONSOLE, print log to stderr.
+// if define SIMPLE_PRINT_FORMAT, print log in simple format.
+#ifndef PRINT_TO_FILE
+    #define PRINT_TO_CONSOLE
+#endif
+
+#ifndef DEFAULT_PRINT_FORMAT
+    #define SIMPLE_PRINT_FORMAT
+#endif
+// ===========================================================
 
 #ifndef TRUE
     #define TRUE 1

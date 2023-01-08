@@ -23,16 +23,19 @@ static const char *level_strings[] = {
     "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL"
 };
 
+#ifdef SIMPLE_PRINT_FORMAT
 
-static void simple_print(log_Event *ev) {
-    PRINT_TO_FP(buf, 16, "%H:%M:%S");
-}
+    static void simple_print(log_Event *ev) {
+        PRINT_TO_FP(buf, 16, "%H:%M:%S");
+    }
 
+#else
 
-static void default_print(log_Event *ev) {
-    PRINT_TO_FP(buf, 64, "%Y-%m-%d %H:%M:%S");
-}
+    static void default_print(log_Event *ev) {
+        PRINT_TO_FP(buf, 64, "%Y-%m-%d %H:%M:%S");
+    }
 
+#endif
 
 void log_set_level(int level) {
     L.level = level;
@@ -65,7 +68,7 @@ void log_log(int level, const char *file, int line, const char *fmt, ...) {
     #ifdef PRINT_TO_CONSOLE
         init_event(&ev, stderr);
     #else
-        FILE *fp = fopen("./log.txt", "a+");
+        FILE *fp = fopen(LOG_PATH, "a+");
         if( !fp ) {
             return;
         }
