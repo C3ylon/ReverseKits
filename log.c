@@ -5,7 +5,7 @@
         char buf[len];                                                    \
         buf[strftime(buf, sizeof(buf), pattern, ev->time)] = '\0';        \
         fprintf(                                                          \
-            ev->fp, "%s %-5s %s:%d\t: ",                                  \
+            ev->fp, "%s %-5s %s:%-5d: ",                                  \
             buf, level_strings[ev->level], ev->file, ev->line);           \
         vfprintf(ev->fp, ev->fmt, ev->ap);                                \
         fprintf(ev->fp, "\n");                                            \
