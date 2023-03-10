@@ -2,54 +2,54 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-char* utf16le_to_utf8(const uint16_t* utf16)
-{
-    int len16 = 0;
-    while (utf16[len16] != 0) {
-        len16++;
-    }
-    int len8 = 0;
-    for (int i = 0; i < len16; i++) {
-        if (utf16[i] < 0x80) {
-            len8++;
-        }
-        else if (utf16[i] < 0x800) {
-            len8 += 2;
-        }
-        else {
-            len8 += 3;
-        }
-    }
+// char* utf16le_to_utf8(const uint16_t* utf16)
+// {
+//     int len16 = 0;
+//     while (utf16[len16] != 0) {
+//         len16++;
+//     }
+//     int len8 = 0;
+//     for (int i = 0; i < len16; i++) {
+//         if (utf16[i] < 0x80) {
+//             len8++;
+//         }
+//         else if (utf16[i] < 0x800) {
+//             len8 += 2;
+//         }
+//         else {
+//             len8 += 3;
+//         }
+//     }
 
-    char* utf8 = (char*)malloc(len8 + 1);
-    if (utf8 == NULL) {
-        return NULL;
-    }
+//     char* utf8 = (char*)malloc(len8 + 1);
+//     if (utf8 == NULL) {
+//         return NULL;
+//     }
 
-    int j = 0;
-    for (int i = 0; i < len16; i++) {
-        uint16_t c = utf16[i];
-        if (c < 0x80) {
-            utf8[j++] = (char)c;
-        }
-        else if (c < 0x800) {
-            utf8[j++] = (char)(0xC0 | (c >> 6));
-            utf8[j++] = (char)(0x80 | (c & 0x3F));
-        }
-        else {
-            utf8[j++] = (char)(0xE0 | (c >> 12));
-            utf8[j++] = (char)(0x80 | ((c >> 6) & 0x3F));
-            utf8[j++] = (char)(0x80 | (c & 0x3F));
-        }
-    }
+//     int j = 0;
+//     for (int i = 0; i < len16; i++) {
+//         uint16_t c = utf16[i];
+//         if (c < 0x80) {
+//             utf8[j++] = (char)c;
+//         }
+//         else if (c < 0x800) {
+//             utf8[j++] = (char)(0xC0 | (c >> 6));
+//             utf8[j++] = (char)(0x80 | (c & 0x3F));
+//         }
+//         else {
+//             utf8[j++] = (char)(0xE0 | (c >> 12));
+//             utf8[j++] = (char)(0x80 | ((c >> 6) & 0x3F));
+//             utf8[j++] = (char)(0x80 | (c & 0x3F));
+//         }
+//     }
 
-    utf8[j] = '\0';
+//     utf8[j] = '\0';
 
-    return utf8;
-}
+//     return utf8;
+// }
 
 
-void utf16le_to_utf8(const char *utf16le_str, char *utf8_str) {
+void utf16le_to_utf8(const unsigned char *utf16le_str, unsigned char *utf8_str) {
     int i = 0, j = 0;
     while (utf16le_str[i] != '\0') {
         unsigned short ucs2_char = (utf16le_str[i+1] << 8) | utf16le_str[i];
