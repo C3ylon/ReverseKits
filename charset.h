@@ -1,5 +1,9 @@
 #include <stdlib.h>
 
+// need caller to free pointer.
+unsigned char *utf16le_to_utf8(const unsigned short *utf16);
+unsigned short *utf8_to_utf16le(const unsigned char *utf8);
+
 unsigned char *utf16le_to_utf8(const unsigned short *utf16)
 {
     int len8 = 0, i = 0;
