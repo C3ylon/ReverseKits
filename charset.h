@@ -52,9 +52,16 @@ unsigned short *utf8_to_utf16le(const unsigned char *utf8)
         }
         if(utf8[i] < 0x80) {
             ++i;
-        } else if(utf8[i] & 0x20){
+        } else if((utf8[i] & 0x20) == 0){
+            if((utf8[i+1] & 0xC0) != 0x80) {
+                return 0;
+            }
             i += 2;
         } else {
+            if((utf8[i+1] & 0xC0) != 0x80 
+                || (utf8[i+2] & 0xC0) != 0x80 ) {
+                return 0;
+            }
             i += 3;
         }
         ++len16;
@@ -68,10 +75,21 @@ unsigned short *utf8_to_utf16le(const unsigned char *utf8)
     i = 0;
     int j = 0;
     while(1) {
-        unsigned char c = utf8[i];
+        unsigned char c = utf8[i++];
         if(c == 0) {
-            
+            utf16[j] = '\0';
+            return utf16;
+        }
+        if(c < 0x80) {
+            utf16[j++] = c;
+        } else if((c & 0x20) == 0) {
+            utf16[j++] = ((c & 0x1F) << 6)
+                        | (utf8[i++] & 0x3F); 
+        } else {
+            utf16[j++] = ((c & 0x0F) << 12)
+                        | ((utf8[i] & 0x3F) << 6)
+                        | (utf8[i+1] & 0x3F);
+            i += 2;
         }
     }
-
 }
