@@ -1,3 +1,6 @@
+#ifndef CHARSET__H_
+#define CHARSET__H_
+
 #include <stdlib.h>
 
 // need caller to free pointer.
@@ -97,3 +100,5 @@ unsigned short *utf8_to_utf16le(const unsigned char *utf8)
         }
     }
 }
+
+#endif
