@@ -7,11 +7,11 @@
 #include <string.h>
 
 #ifdef LOG__H_
-    #include "./log.h"
     #define LOG_INFO(...) log_info(__VA_ARGS__)
     #define LOG_ERR(...) log_error(__VA_ARGS__)
 #else
     #define LOG_INFO(...)
+    #define LOG_ERR(...)
 #endif
 
 #ifndef MAX_PATH
