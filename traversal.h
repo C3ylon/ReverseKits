@@ -6,6 +6,13 @@
 #include <io.h>
 #include <string.h>
 
+#ifdef LOG__H_
+    #include "./log.h"
+    #define LOG_INFO(...) log_info(__VA_ARGS__)
+#else
+    #define LOG_INFO(...)
+#endif
+
 #ifndef MAX_PATH
     #define MAX_PATH 260
 #endif
@@ -15,20 +22,21 @@ void TraversalFiles(const char *dir)
 {
     struct _stat64 sbuff;
     if(_stat64(dir, &sbuff) == -1) {
-        printf("[!]find file or folder path fail\n");
+        // printf("[!]find file or folder path fail\n");
         return;
-    } 
-    if(sbuff.st_mode & _S_IFREG) {
-        printf("[*]file size: %I64d bytes\n", sbuff.st_size);
     }
-    else if(sbuff.st_mode & S_IFDIR) {
+    if(sbuff.st_mode & _S_IFREG) {
+        // printf("[*]file size: %I64d bytes\n", sbuff.st_size);
+        log_info("aa");
+        LOG_INFO("[*]file size: %I64d bytes\n", sbuff.st_size);
+    } else if(sbuff.st_mode & S_IFDIR) {
         char dirNew[MAX_PATH];
         strcpy(dirNew, dir);
         strcat(dirNew, "\\*.*");
         struct __finddata64_t findData;
         intptr_t handle = _findfirst64(dirNew, &findData);
         if (handle == -1) {
-            printf("[!]find path fail\n");
+            // printf("[!]find path fail\n");
             return;
         }
         do {
@@ -36,7 +44,7 @@ void TraversalFiles(const char *dir)
                 if (strcmp(findData.name, ".") == 0 || strcmp(findData.name, "..") == 0) {
                     continue;
                 }
-                printf("[FOLDER]%s\n", findData.name);
+                // printf("[FOLDER]%s\n", findData.name);
                 memset(dirNew, 0, MAX_PATH);
                 strcpy(dirNew, dir);
                 strcat(dirNew, "\\");
@@ -44,7 +52,7 @@ void TraversalFiles(const char *dir)
                 TraversalFiles(dirNew);
             }
             else {
-                printf("[FILE]%s\t%I64d bytes\t", findData.name, findData.size);
+                // printf("[FILE]%s\t%I64d bytes\n", findData.name, findData.size);
             }
         } while(_findnext64(handle, &findData) == 0);
         _findclose(handle);
