@@ -49,8 +49,7 @@ void TraversalFiles(const char *dir)
                 strcat(dirNew, "\\");
                 strcat(dirNew, findData.name);
                 TraversalFiles(dirNew);
-            }
-            else {
+            } else {
                 LOG_INFO("[FILE]%s\t%I64d bytes", findData.name, findData.size);
             }
         } while(_findnext64(handle, &findData) == 0);
