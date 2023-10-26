@@ -32,9 +32,11 @@ struct with_pseudo {
 };
 
 // Strong exception guarantee
-template<typename handle_t, typename Fn, Fn close, typename is_valid = non_negative>
+template<typename handle_t, typename Fn, Fn close, typename check_valid = non_negative>
 class HandleGuard
 {
+private:
+    handle_t _handle;
 public:
     static constexpr handle_t zero_handle{ };
 
@@ -42,9 +44,9 @@ public:
     explicit HandleGuard( handle_t handle = zero_handle ) noexcept
         : _handle(handle) { }
 
-    HandleGuard( HandleGuard &&rhs ) noexcept
-        : _handle(rhs._handle) {
-        rhs._handle = zero_handle;
+    HandleGuard& operator =(handle_t handle) noexcept {
+        reset(handle);
+        return *this;
     }
 
     ~HandleGuard() {
@@ -54,7 +56,11 @@ public:
 
     HandleGuard(const HandleGuard&) = delete;
     HandleGuard& operator =(const HandleGuard&) = delete;
-
+    
+    HandleGuard( HandleGuard &&rhs ) noexcept
+        : _handle(rhs._handle) {
+        rhs._handle = zero_handle;
+    }
     HandleGuard& operator =(HandleGuard &&rhs) noexcept {
         if (&rhs == this)
             return *this;
@@ -62,11 +68,6 @@ public:
         reset(rhs._handle);
         rhs._handle = zero_handle;
 
-        return *this;
-    }
-
-    HandleGuard& operator =(handle_t handle) noexcept {
-        reset(handle);
         return *this;
     }
 
@@ -85,23 +86,19 @@ public:
     }
 
     handle_t get() const noexcept { return _handle; }
-    bool valid() const noexcept { return is_valid::call(_handle); }
+    bool valid() const noexcept { return check_valid::call(_handle); }
 
     operator handle_t() const noexcept { return _handle; }
     explicit operator bool() const noexcept { return valid(); }
-
     handle_t *operator &() noexcept { return &_handle; }
+    const handle_t *operator &() const noexcept { return &_handle; }
 
     bool operator ==(const HandleGuard& rhs) const noexcept { return _handle == rhs._handle; }
     bool operator <(const HandleGuard& rhs) const noexcept { return _handle < rhs._handle; }
-
-private:
-    handle_t _handle;
 };
 
-template<typename handle_t, typename Fn, Fn close, typename is_valid>
-constexpr handle_t HandleGuard<handle_t, Fn, close, is_valid>::zero_handle; 
-
+template<typename handle_t, typename Fn, Fn close, typename check_valid>
+constexpr handle_t HandleGuard<handle_t, Fn, close, check_valid>::zero_handle; 
 
 using Handle        = HandleGuard<HANDLE, decltype(&CloseHandle), &CloseHandle>;
 using ProcessHandle = HandleGuard<HANDLE, decltype(&CloseHandle), &CloseHandle, with_pseudo<non_negative> >;
