@@ -4,18 +4,16 @@
 
 namespace clre {
 
-
 struct non_zero {
     template<typename T>
-    static bool call(T handle) noexcept {
+    static bool call(const T &handle) noexcept {
         return (intptr_t) handle != 0;
     }
 };
 
-
 struct non_negative {
     template<typename T>
-    static bool call(T handle) noexcept {
+    static bool call(const T &handle) noexcept {
         return (intptr_t) handle > 0;
     }
 };
@@ -23,12 +21,12 @@ struct non_negative {
 template<typename wrapped_t>
 struct with_pseudo {
     template<typename T>
-    static bool call(T handle) noexcept {
+    static bool call(const T &handle) noexcept {
         if (wrapped_t::call(handle))
             return true;
 
         // Check if it's a pseudo handle
-        auto h = (HANDLE)(uintptr_t)handle;
+        auto h = (HANDLE)(intptr_t)handle;
         return h == GetCurrentProcess() || h == GetCurrentThread();
     }
 };
@@ -38,13 +36,13 @@ template<typename handle_t, typename Fn, Fn close, typename is_valid = non_negat
 class HandleGuard
 {
 public:
-    static constexpr handle_t zero_handle{ 0 };
+    static constexpr handle_t zero_handle{ };
 
 public:
     explicit HandleGuard( handle_t handle = zero_handle ) noexcept
         : _handle(handle) { }
 
-    HandleGuard( HandleGuard&& rhs ) noexcept
+    HandleGuard( HandleGuard &&rhs ) noexcept
         : _handle(rhs._handle) {
         rhs._handle = zero_handle;
     }
@@ -57,11 +55,11 @@ public:
     HandleGuard(const HandleGuard&) = delete;
     HandleGuard& operator =(const HandleGuard&) = delete;
 
-    HandleGuard& operator =(HandleGuard&& rhs) noexcept {
+    HandleGuard& operator =(HandleGuard &&rhs) noexcept {
         if (&rhs == this)
             return *this;
 
-        reset( rhs._handle );
+        reset(rhs._handle);
         rhs._handle = zero_handle;
 
         return *this;
@@ -92,7 +90,7 @@ public:
     operator handle_t() const noexcept { return _handle; }
     explicit operator bool() const noexcept { return valid(); }
 
-    handle_t* operator &() noexcept { return &_handle; }
+    handle_t *operator &() noexcept { return &_handle; }
 
     bool operator ==(const HandleGuard& rhs) const noexcept { return _handle == rhs._handle; }
     bool operator <(const HandleGuard& rhs) const noexcept { return _handle < rhs._handle; }
