@@ -6,6 +6,7 @@
 // need caller to free pointer.
 unsigned char *utf16le_to_utf8(const unsigned short *utf16);
 unsigned short *utf8_to_utf16le(const unsigned char *utf8);
+char *binary_to_base16(char *data, size_t len);
 
 unsigned char *utf16le_to_utf8(const unsigned short *utf16)
 {
@@ -99,6 +100,20 @@ unsigned short *utf8_to_utf16le(const unsigned char *utf8)
             i += 2;
         }
     }
+}
+
+char base16charset[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+
+char *binary_to_base16(char *data, size_t len)
+{
+    size_t i = 0;
+    char *res = (char *)malloc(len * 2);
+    while(i < len) {
+        res[i * 2] = base16charset[ data[i] >> 4 ];
+        res[i*2 + 1] = base16charset[ data[i] & 0xF ];
+        ++i;
+    }
+    return res;
 }
 
 #endif

@@ -72,6 +72,21 @@ void GetSuffix(wchar_t *module_name) {
     module_name[cur] = '\0';
 }
 
+#ifndef LOG_PATH
+static wchar_t g_path[MAX_PATH] = { 0 };
+static void InitPath() {
+    if(g_path[0] != '\0')
+        return ;
+    wchar_t module_name[MAX_PATH] = { 0 };
+    SHGetSpecialFolderPathW(0, g_path, CSIDL_DESKTOP, 0);
+    GetModuleFileNameW(0, module_name, MAX_PATH);
+    GetSuffix(module_name);
+    wcscat(g_path, L"\\");
+    wcscat(g_path, module_name);
+    wcscat(g_path, L"_log.dat");
+}
+#endif
+
 void log_log(int level, const char *file, int line, const char *fmt, ...) {
     log_Event ev = {
         .fmt   = fmt,
@@ -88,15 +103,8 @@ void log_log(int level, const char *file, int line, const char *fmt, ...) {
         #ifdef LOG_PATH
             FILE *fp = fopen(LOG_PATH, "a+");
         #else
-            wchar_t path[MAX_PATH] = { 0 };
-            wchar_t module_name[MAX_PATH] = { 0 };
-            SHGetSpecialFolderPathW(0, path, CSIDL_DESKTOP, 0);
-            GetModuleFileNameW(0, module_name, MAX_PATH);
-            GetSuffix(module_name);
-            wcscat(path, L"\\");
-            wcscat(path, module_name);
-            wcscat(path, L"_log.dat");
-            FILE *fp = _wfopen(path, L"a+");
+            InitPath();
+            FILE *fp = _wfopen(g_path, L"a+");
         #endif
 
         if( !fp ) {
