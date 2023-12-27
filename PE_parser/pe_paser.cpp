@@ -1,9 +1,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "filemng.h"
 
 #include <windows.h>
+
+#include "filemng.h"
 
 using std::cout;
 using std::endl;
@@ -49,6 +50,16 @@ void parse_dos_header(DWORD &e_lfanew) {
     printbuffer.push_back(string("e_lfanew: ") + printmemory(&e_lfanew, 4));
 }
 
+void parse_file_header() {
+    IMAGE_FILE_HEADER fileheader;
+    fread(&fileheader, sizeof(IMAGE_FILE_HEADER), 1, fp);
+    printbuffer.push_back(string(30, '-'));
+    printbuffer.push_back(string("Machine: ") + printmemory(&fileheader.Machine, 2));
+    printbuffer.push_back(string("NumberOfSections: ") + printmemory(&fileheader.NumberOfSections, 2));
+    printbuffer.push_back(string("SizeOfOptionalHeader: ") + printmemory(&fileheader.SizeOfOptionalHeader, 2));
+    printbuffer.push_back(string("Characteristics: ") + printmemory(&fileheader.Characteristics, 2));
+}
+
 void parse_nt_header(DWORD e_lfanew) {
     printbuffer.push_back(string(30, '='));
     DWORD Signature = 0;
@@ -59,6 +70,7 @@ void parse_nt_header(DWORD e_lfanew) {
     }
     printbuffer.push_back("[*]NT header:");
     printbuffer.push_back(string("Signature: ") + printmemory(&Signature, 4));
+    parse_file_header();
 }
 
 int main(int argc, char *argv[]) {
