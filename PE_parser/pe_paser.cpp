@@ -11,9 +11,21 @@ using std::endl;
 using std::string;
 using std::vector;
 
+const size_t common_optional_header_lenth
+    = (size_t)&((IMAGE_OPTIONAL_HEADER64*)(0))->SizeOfStackReserve;
+const size_t x64_offset_in_opheader
+    = (size_t)&((IMAGE_OPTIONAL_HEADER64*)(0))->NumberOfRvaAndSizes
+    - (size_t)&((IMAGE_OPTIONAL_HEADER64*)(0))->SizeOfStackReserve;
+const size_t x32_offset_in_opheader
+    = (size_t)&((IMAGE_OPTIONAL_HEADER32*)(0))->NumberOfRvaAndSizes
+    - (size_t)&((IMAGE_OPTIONAL_HEADER32*)(0))->SizeOfStackReserve;
+
 clre::FileMng fp;
-bool is_x64;
 vector<string> printbuffer;
+
+bool is_x64;
+
+DWORD e_lfanew;
 
 string printmemory(void *addr, size_t size) {
     string res;
@@ -37,33 +49,68 @@ void output() {
     }
 }
 
-void parse_dos_header(DWORD &e_lfanew) {
+void parse_dos_header() {
+    printbuffer.push_back("[*]DOS header:");
     WORD e_magic = 0;
     fread(&e_magic, 2, 1, fp);
     if(e_magic != 0x5A4D) {
         throw string("[!]dos header magic error: ") + printmemory(&e_magic, 2);
     }
-    printbuffer.push_back("[*]DOS header:");
-    _fseeki64(fp, 0x3C, 0);
+    _fseeki64(fp, 0x3C, SEEK_SET);
     fread(&e_lfanew, 4, 1, fp);
     printbuffer.push_back(string("e_magic: ") + printmemory(&e_magic, 2));
     printbuffer.push_back(string("e_lfanew: ") + printmemory(&e_lfanew, 4));
 }
 
 void parse_file_header() {
+    printbuffer.push_back(string(30, '-'));
     IMAGE_FILE_HEADER fileheader;
     fread(&fileheader, sizeof(IMAGE_FILE_HEADER), 1, fp);
-    printbuffer.push_back(string(30, '-'));
     printbuffer.push_back(string("Machine: ") + printmemory(&fileheader.Machine, 2));
     printbuffer.push_back(string("NumberOfSections: ") + printmemory(&fileheader.NumberOfSections, 2));
     printbuffer.push_back(string("SizeOfOptionalHeader: ") + printmemory(&fileheader.SizeOfOptionalHeader, 2));
     printbuffer.push_back(string("Characteristics: ") + printmemory(&fileheader.Characteristics, 2));
 }
 
-void parse_nt_header(DWORD e_lfanew) {
+void parse_optional_header() {
+    printbuffer.push_back(string(30, '-'));
+    IMAGE_OPTIONAL_HEADER64 opheader;
+    fread(&opheader, common_optional_header_lenth, 1, fp);
+    if(opheader.Magic == 0x020B)
+        is_x64 = true;
+    else if(opheader.Magic == 0x010B)
+        is_x64 = false;
+    else
+        throw string("[!]optional header magic error: ") + printmemory(&opheader.Magic, 2);
+    printbuffer.push_back(string("Magic: ") + printmemory(&opheader.Magic, 2));
+    printbuffer.push_back(string("AddressOfEntryPoint: ") + printmemory(&opheader.AddressOfEntryPoint, 4));
+    if(is_x64)
+        printbuffer.push_back(string("ImageBase: ") + printmemory(&opheader.ImageBase, 8));
+    else
+        printbuffer.push_back(string("ImageBase: ") + printmemory((char*)&opheader.ImageBase + 4, 4));
+    printbuffer.push_back(string("SectionAlignment: ") + printmemory(&opheader.SectionAlignment, 4));
+    printbuffer.push_back(string("FileAlignment: ") + printmemory(&opheader.FileAlignment, 4));
+    printbuffer.push_back(string("SizeOfImage: ") + printmemory(&opheader.SizeOfImage, 4));
+    printbuffer.push_back(string("SizeOfHeaders: ") + printmemory(&opheader.SizeOfHeaders, 4));
+    printbuffer.push_back(string("Subsystem: ") + printmemory(&opheader.Subsystem, 2));
+    DWORD NumberOfRvaAndSizes;
+    if(is_x64)
+        _fseeki64(fp, x64_offset_in_opheader, SEEK_CUR);
+    else
+        _fseeki64(fp, x32_offset_in_opheader, SEEK_CUR);
+    fread(&NumberOfRvaAndSizes, 4, 1, fp);
+    printbuffer.push_back(string("NumberOfRvaAndSizes: ") + printmemory(&NumberOfRvaAndSizes, 4));
+    printbuffer.push_back(string("DataDirectory:"));
+    auto datadirectory = new IMAGE_DATA_DIRECTORY[NumberOfRvaAndSizes];
+    fread(datadirectory, sizeof(IMAGE_DATA_DIRECTORY), NumberOfRvaAndSizes, fp);
+    printbuffer.push_back(printmemory(datadirectory, sizeof(IMAGE_DATA_DIRECTORY)*NumberOfRvaAndSizes));
+    delete[] datadirectory;
+}
+
+void parse_nt_header() {
     printbuffer.push_back(string(30, '='));
     DWORD Signature = 0;
-    _fseeki64(fp, e_lfanew, 0);
+    _fseeki64(fp, e_lfanew, SEEK_SET);
     fread(&Signature, 4, 1, fp);
     if(Signature != 0x4550) {
         throw string("[!]nt header magic error: ") + printmemory(&Signature, 4);
@@ -71,6 +118,7 @@ void parse_nt_header(DWORD e_lfanew) {
     printbuffer.push_back("[*]NT header:");
     printbuffer.push_back(string("Signature: ") + printmemory(&Signature, 4));
     parse_file_header();
+    parse_optional_header();
 }
 
 int main(int argc, char *argv[]) {
@@ -80,9 +128,8 @@ int main(int argc, char *argv[]) {
             throw string("[!]Missing parameter: file_path");
         }
         fp = clre::FileMng(argv[1], "rb");
-        DWORD e_lfanew = 0;
-        parse_dos_header(e_lfanew);
-        parse_nt_header(e_lfanew);
+        parse_dos_header();
+        parse_nt_header();
         output();
     } catch (const string &e) {
         std::cout << e << "\n";
