@@ -26,6 +26,8 @@ vector<string> printbuffer;
 bool is_x64;
 
 DWORD e_lfanew;
+WORD NumberOfSections;
+vector<IMAGE_SECTION_HEADER> section_header;
 
 string printmemory(void *addr, size_t size) {
     string res;
@@ -68,6 +70,7 @@ void parse_file_header() {
     fread(&fileheader, sizeof(IMAGE_FILE_HEADER), 1, fp);
     printbuffer.push_back(string("Machine: ") + printmemory(&fileheader.Machine, 2));
     printbuffer.push_back(string("NumberOfSections: ") + printmemory(&fileheader.NumberOfSections, 2));
+    NumberOfSections = fileheader.NumberOfSections;
     printbuffer.push_back(string("SizeOfOptionalHeader: ") + printmemory(&fileheader.SizeOfOptionalHeader, 2));
     printbuffer.push_back(string("Characteristics: ") + printmemory(&fileheader.Characteristics, 2));
 }
@@ -121,6 +124,31 @@ void parse_nt_header() {
     parse_optional_header();
 }
 
+void parse_section_header() {
+    printbuffer.push_back(string(30, '='));
+    IMAGE_SECTION_HEADER secheader;
+    auto print_section_name = [&]() -> string {
+        string res;
+        for(int i = 0; i < IMAGE_SIZEOF_SHORT_NAME; i++) {
+            res += secheader.Name[i];
+        }
+        return res;
+    };
+    for(auto i = 0; i < NumberOfSections; i++) {
+        printbuffer.push_back(string("[*]section header ") + std::to_string(i) + " :");
+        fread(&secheader, sizeof(secheader), 1, fp);
+        section_header.push_back(secheader);
+        printbuffer.push_back(string("Name: ") + printmemory(&secheader.Name, 8) + "  ascii: " + print_section_name());
+        printbuffer.push_back(string("VirtualSize: ") + printmemory(&secheader.Misc.VirtualSize, 4));
+        printbuffer.push_back(string("VirtualAddress: ") + printmemory(&secheader.VirtualAddress, 4));
+        printbuffer.push_back(string("SizeOfRawData: ") + printmemory(&secheader.SizeOfRawData, 4));
+        printbuffer.push_back(string("PointerToRawData: ") + printmemory(&secheader.PointerToRawData, 4));
+        printbuffer.push_back(string("Characteristics: ") + printmemory(&secheader.Characteristics, 4));
+        printbuffer.push_back("");
+    }
+    printbuffer.pop_back();
+}
+
 int main(int argc, char *argv[]) {
     std::ios_base::sync_with_stdio(false);
     try {
@@ -130,6 +158,7 @@ int main(int argc, char *argv[]) {
         fp = clre::FileMng(argv[1], "rb");
         parse_dos_header();
         parse_nt_header();
+        parse_section_header();
         output();
     } catch (const string &e) {
         std::cout << e << "\n";
