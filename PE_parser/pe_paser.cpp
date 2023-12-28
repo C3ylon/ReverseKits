@@ -135,7 +135,7 @@ void parse_section_header() {
         return res;
     };
     for(auto i = 0; i < NumberOfSections; i++) {
-        printbuffer.push_back(string("[*]section header ") + std::to_string(i) + " :");
+        printbuffer.push_back(string("[*]section header ") + std::to_string(i+1) + " :");
         fread(&secheader, sizeof(secheader), 1, fp);
         section_header.push_back(secheader);
         printbuffer.push_back(string("Name: ") + printmemory(&secheader.Name, 8) + "  ascii: " + print_section_name());
