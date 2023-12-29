@@ -161,6 +161,7 @@ int main(int argc, char *argv[]) {
         parse_section_header();
         output();
     } catch (const string &e) {
+        output();
         std::cout << e << "\n";
     }
     std::cout << std::flush;
