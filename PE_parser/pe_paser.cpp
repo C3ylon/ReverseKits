@@ -28,6 +28,8 @@ bool is_x64;
 DWORD e_lfanew;
 WORD NumberOfSections;
 vector<IMAGE_SECTION_HEADER> section_header;
+IMAGE_DATA_DIRECTORY import_directory;
+IMAGE_DATA_DIRECTORY export_directory;
 
 string printmemory(void *addr, size_t size) {
     string res;
@@ -107,6 +109,8 @@ void parse_optional_header() {
     auto datadirectory = new IMAGE_DATA_DIRECTORY[NumberOfRvaAndSizes];
     fread(datadirectory, sizeof(IMAGE_DATA_DIRECTORY), NumberOfRvaAndSizes, fp);
     printbuffer.push_back(printmemory(datadirectory, sizeof(IMAGE_DATA_DIRECTORY)*NumberOfRvaAndSizes));
+    memcpy(&import_directory, &datadirectory[1], sizeof(IMAGE_DATA_DIRECTORY));
+    memcpy(&export_directory, &datadirectory[0], sizeof(IMAGE_DATA_DIRECTORY));
     delete[] datadirectory;
 }
 
@@ -149,6 +153,40 @@ void parse_section_header() {
     printbuffer.pop_back();
 }
 
+DWORD rva_to_raw(DWORD rva) {
+    DWORD raw = 0;
+    for(size_t i = 0; i < section_header.size(); i++) {
+        if(rva >= section_header[i].VirtualAddress
+            && (i == section_header.size()-1
+                || rva < section_header[i+1].VirtualAddress)) {
+                    DWORD offset = rva - section_header[i].VirtualAddress;
+                    raw = section_header[i].PointerToRawData + offset;
+                    return raw;
+                }
+    }
+    throw string("[!]rva to raw wrong");
+}
+
+void parse_iat() {
+    printbuffer.push_back(string(30, '='));
+    printbuffer.push_back("[*]IAT:");
+    DWORD iat_rva = import_directory.VirtualAddress;
+    DWORD raw = rva_to_raw(iat_rva);
+    DWORD size = import_directory.Size;
+    printbuffer.push_back(string("[***]size: ") + printmemory(&size, 4));
+    IMAGE_IMPORT_DESCRIPTOR iid;
+    _fseeki64(fp, raw, SEEK_SET);
+    fread(&iid, sizeof(IMAGE_IMPORT_DESCRIPTOR), 1, fp);
+    printbuffer.push_back(string("OriginalFirstThunk: ") + printmemory(&iid.OriginalFirstThunk, 4));
+    printbuffer.push_back(string("Name: ") + printmemory(&iid.Name, 4));
+    DWORD name_raw = rva_to_raw(iid.Name);
+    _fseeki64(fp, name_raw, SEEK_SET);
+    char s[256];
+    fread(s, 1, 256, fp);
+    printbuffer.push_back(string(s));
+    printbuffer.push_back(string("FirstThunk: ") + printmemory(&iid.FirstThunk, 4));
+}
+
 int main(int argc, char *argv[]) {
     std::ios_base::sync_with_stdio(false);
     try {
@@ -159,6 +197,7 @@ int main(int argc, char *argv[]) {
         parse_dos_header();
         parse_nt_header();
         parse_section_header();
+        parse_iat();
         output();
     } catch (const string &e) {
         output();
