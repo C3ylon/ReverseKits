@@ -178,19 +178,30 @@ void parse_iat() {
     _fseeki64(fp, raw, SEEK_SET);
     while(true) {
         fread(&iid, sizeof(IMAGE_IMPORT_DESCRIPTOR), 1, fp);
-        auto pos = _ftelli64(fp);
         if(memcmp(&iid, &iid_zero_end, sizeof(IMAGE_IMPORT_DESCRIPTOR)) == 0)
             break;
-        printbuffer.push_back(string("OriginalFirstThunk: ") + printmemory(&iid.OriginalFirstThunk, 4));
-        
+        auto pos = _ftelli64(fp);
+        printbuffer.push_back(string(30, '-'));
+
+        auto print_rva_raw = [](string name, DWORD rva, DWORD raw = 0) {
+            DWORD real_raw;
+            if(raw)
+                real_raw = raw;
+            else
+                real_raw = rva_to_raw(rva);
+            printbuffer.push_back(name + " RVA: " + printmemory(&rva, 4)
+                + "\tRAW: " + printmemory(&real_raw, 4));
+        };
+
         DWORD name_raw = rva_to_raw(iid.Name);
         _fseeki64(fp, name_raw, SEEK_SET);
         char s[256];
         fread(s, 1, 256, fp);
+        printbuffer.push_back(string("DLL name: ") + s); 
+        print_rva_raw("OriginalFirstThunk", iid.OriginalFirstThunk);
+        print_rva_raw("Name", iid.Name, name_raw);
+        print_rva_raw("FirstThunk", iid.FirstThunk);
         _fseeki64(fp, pos, SEEK_SET);
-        printbuffer.push_back(string("Name: ") + printmemory(&iid.Name, 4));
-        printbuffer.push_back(string("Name raw: ") + printmemory(&name_raw, 4) + "\tcontent: " + s);
-        printbuffer.push_back(string("FirstThunk: ") + printmemory(&iid.FirstThunk, 4));
     }
 }
 
