@@ -169,22 +169,29 @@ DWORD rva_to_raw(DWORD rva) {
 
 void parse_iat() {
     printbuffer.push_back(string(30, '='));
-    printbuffer.push_back("[*]IAT:");
     DWORD iat_rva = import_directory.VirtualAddress;
     DWORD raw = rva_to_raw(iat_rva);
     DWORD size = import_directory.Size;
-    printbuffer.push_back(string("[***]size: ") + printmemory(&size, 4));
+    printbuffer.push_back(string("[*]IAT\nraw: ") + printmemory(&raw, 4)+ "\tsize: " + printmemory(&size, 4));
     IMAGE_IMPORT_DESCRIPTOR iid;
+    const static IMAGE_IMPORT_DESCRIPTOR iid_zero_end = { };
     _fseeki64(fp, raw, SEEK_SET);
-    fread(&iid, sizeof(IMAGE_IMPORT_DESCRIPTOR), 1, fp);
-    printbuffer.push_back(string("OriginalFirstThunk: ") + printmemory(&iid.OriginalFirstThunk, 4));
-    printbuffer.push_back(string("Name: ") + printmemory(&iid.Name, 4));
-    DWORD name_raw = rva_to_raw(iid.Name);
-    _fseeki64(fp, name_raw, SEEK_SET);
-    char s[256];
-    fread(s, 1, 256, fp);
-    printbuffer.push_back(string(s));
-    printbuffer.push_back(string("FirstThunk: ") + printmemory(&iid.FirstThunk, 4));
+    while(true) {
+        fread(&iid, sizeof(IMAGE_IMPORT_DESCRIPTOR), 1, fp);
+        auto pos = _ftelli64(fp);
+        if(memcmp(&iid, &iid_zero_end, sizeof(IMAGE_IMPORT_DESCRIPTOR)) == 0)
+            break;
+        printbuffer.push_back(string("OriginalFirstThunk: ") + printmemory(&iid.OriginalFirstThunk, 4));
+        
+        DWORD name_raw = rva_to_raw(iid.Name);
+        _fseeki64(fp, name_raw, SEEK_SET);
+        char s[256];
+        fread(s, 1, 256, fp);
+        _fseeki64(fp, pos, SEEK_SET);
+        printbuffer.push_back(string("Name: ") + printmemory(&iid.Name, 4));
+        printbuffer.push_back(string("Name raw: ") + printmemory(&name_raw, 4) + "\tcontent: " + s);
+        printbuffer.push_back(string("FirstThunk: ") + printmemory(&iid.FirstThunk, 4));
+    }
 }
 
 int main(int argc, char *argv[]) {
