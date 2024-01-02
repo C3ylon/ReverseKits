@@ -19,6 +19,8 @@ const size_t x64_offset_in_opheader
 const size_t x32_offset_in_opheader
     = (size_t)&((IMAGE_OPTIONAL_HEADER32*)(0))->NumberOfRvaAndSizes
     - (size_t)&((IMAGE_OPTIONAL_HEADER32*)(0))->SizeOfStackReserve;
+const size_t size_of_x64 = 8;
+const size_t size_of_x32 = 4;
 
 clre::FileMng fp;
 vector<string> printbuffer;
@@ -67,7 +69,7 @@ void parse_dos_header() {
 }
 
 void parse_file_header() {
-    printbuffer.push_back(string(30, '-'));
+    printbuffer.push_back(string(60, '-'));
     IMAGE_FILE_HEADER fileheader;
     fread(&fileheader, sizeof(IMAGE_FILE_HEADER), 1, fp);
     printbuffer.push_back(string("Machine: ") + printmemory(&fileheader.Machine, 2));
@@ -78,7 +80,7 @@ void parse_file_header() {
 }
 
 void parse_optional_header() {
-    printbuffer.push_back(string(30, '-'));
+    printbuffer.push_back(string(60, '-'));
     IMAGE_OPTIONAL_HEADER64 opheader;
     fread(&opheader, common_optional_header_lenth, 1, fp);
     if(opheader.Magic == 0x020B)
@@ -115,7 +117,7 @@ void parse_optional_header() {
 }
 
 void parse_nt_header() {
-    printbuffer.push_back(string(30, '='));
+    printbuffer.push_back(string(60, '='));
     DWORD Signature = 0;
     _fseeki64(fp, e_lfanew, SEEK_SET);
     fread(&Signature, 4, 1, fp);
@@ -129,7 +131,7 @@ void parse_nt_header() {
 }
 
 void parse_section_header() {
-    printbuffer.push_back(string(30, '='));
+    printbuffer.push_back(string(60, '='));
     IMAGE_SECTION_HEADER secheader;
     auto print_section_name = [&]() -> string {
         string res;
@@ -164,11 +166,52 @@ DWORD rva_to_raw(DWORD rva) {
                     return raw;
                 }
     }
-    throw string("[!]rva to raw wrong");
+    throw string("[!]rva to raw wrong. WRONG RVA: ") + printmemory(&rva, sizeof(rva));
+}
+
+void get_func_info(DWORD st_func_rva) {
+    DWORD raw = rva_to_raw(st_func_rva);
+    _fseeki64(fp, raw, SEEK_SET);
+    WORD ordinal;
+    fread(&ordinal, sizeof(ordinal), 1, fp);
+    printbuffer.push_back(string("rva: ") + printmemory(&st_func_rva, sizeof(st_func_rva))
+        + "\traw: " + printmemory(&raw, sizeof(raw))
+        + "\tordinal: " + printmemory(&ordinal, sizeof(ordinal)));
+    char c;
+    string name;
+    while(true) {
+        fread(&c, 1, 1, fp);
+        if(c == 0x00)
+            break;
+        name += c;
+    }
+    printbuffer.push_back(string("func name: ") + name);
+}
+
+void parse_INT(DWORD raw) {
+    _fseeki64(fp, raw, SEEK_SET);
+    vector<DWORD> vec_st_func;
+    while(true) {
+        size_t st_func_rva;
+        if(is_x64)
+            fread(&st_func_rva, size_of_x64, 1, fp);
+        else
+            fread(&st_func_rva, size_of_x32, 1, fp);
+        if(st_func_rva != 0)
+            vec_st_func.push_back(st_func_rva);
+        else
+            break;
+    }
+    int count = 1;
+    for(auto i:vec_st_func) {
+        printbuffer.push_back(string("Number ") + std::to_string(count));
+        get_func_info(i);
+        count++;
+    }
 }
 
 void parse_iat() {
-    printbuffer.push_back(string(30, '='));
+    printbuffer.push_back(string(60, '='));
     DWORD iat_rva = import_directory.VirtualAddress;
     DWORD raw = rva_to_raw(iat_rva);
     DWORD size = import_directory.Size;
@@ -181,28 +224,31 @@ void parse_iat() {
         if(memcmp(&iid, &iid_zero_end, sizeof(IMAGE_IMPORT_DESCRIPTOR)) == 0)
             break;
         auto pos = _ftelli64(fp);
-        printbuffer.push_back(string(30, '-'));
+        printbuffer.push_back(string(60, '-'));
 
-        auto print_rva_raw = [](string name, DWORD rva, DWORD raw = 0) {
-            DWORD real_raw;
-            if(raw)
-                real_raw = raw;
-            else
-                real_raw = rva_to_raw(rva);
+        auto print_rva_raw = [](string name, DWORD rva, DWORD raw) {
             printbuffer.push_back(name + " RVA: " + printmemory(&rva, 4)
-                + "\tRAW: " + printmemory(&real_raw, 4));
+                + "\tRAW: " + printmemory(&raw, 4));
         };
 
         DWORD name_raw = rva_to_raw(iid.Name);
+        DWORD INT_raw = rva_to_raw(iid.OriginalFirstThunk);
+        DWORD IAT_raw = rva_to_raw(iid.FirstThunk); 
         _fseeki64(fp, name_raw, SEEK_SET);
         char s[256];
         fread(s, 1, 256, fp);
         printbuffer.push_back(string("DLL name: ") + s); 
-        print_rva_raw("OriginalFirstThunk", iid.OriginalFirstThunk);
+        print_rva_raw("OriginalFirstThunk", iid.OriginalFirstThunk, INT_raw);
         print_rva_raw("Name", iid.Name, name_raw);
-        print_rva_raw("FirstThunk", iid.FirstThunk);
+        print_rva_raw("FirstThunk", iid.FirstThunk, IAT_raw);
+
+        printbuffer.push_back("\n[*]function imported: ");
+
+        parse_INT(INT_raw);
+
         _fseeki64(fp, pos, SEEK_SET);
     }
+    printbuffer.push_back(string(60, '='));
 }
 
 int main(int argc, char *argv[]) {
