@@ -135,7 +135,7 @@ void parse_section_header() {
     IMAGE_SECTION_HEADER secheader;
     auto print_section_name = [&]() -> string {
         string res;
-        for(int i = 0; i < IMAGE_SIZEOF_SHORT_NAME; i++) {
+        for(int i = 0; i < IMAGE_SIZEOF_SHORT_NAME && secheader.Name[i]; i++) {
             res += secheader.Name[i];
         }
         return res;
@@ -205,7 +205,11 @@ void parse_INT(DWORD raw) {
     int count = 1;
     for(auto i:vec_st_func) {
         printbuffer.push_back(string("Number ") + std::to_string(count));
-        get_func_info(i);
+        try {
+            get_func_info(i);
+        } catch (const string &e) {
+            printbuffer.push_back(e);
+        }
         count++;
     }
 }
@@ -248,7 +252,21 @@ void parse_iat() {
 
         _fseeki64(fp, pos, SEEK_SET);
     }
+}
+
+void parse_eat() {
     printbuffer.push_back(string(60, '='));
+    DWORD eat_rva = export_directory.VirtualAddress;
+    if(eat_rva == 0) {
+        printbuffer.push_back("[*]Don't have EAT");
+        return;
+    }
+    DWORD raw = rva_to_raw(eat_rva);
+    DWORD size = export_directory.Size;
+    printbuffer.push_back(string("[*]EAT\nraw: ") + printmemory(&raw, 4)+ "\tsize: " + printmemory(&size, 4));
+    IMAGE_EXPORT_DIRECTORY ied;
+    _fseeki64(fp, raw, SEEK_SET);
+    fread(&ied, sizeof(IMAGE_EXPORT_DIRECTORY), 1, fp);
 }
 
 int main(int argc, char *argv[]) {
@@ -262,6 +280,7 @@ int main(int argc, char *argv[]) {
         parse_nt_header();
         parse_section_header();
         parse_iat();
+        parse_eat();
         output();
     } catch (const string &e) {
         output();
