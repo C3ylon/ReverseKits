@@ -1,6 +1,7 @@
 #ifndef FILEMNG__H_
 #define FILEMNG__H_
 #include <cstdio>
+#include <stdexcept>
 
 namespace clre {
 
@@ -13,7 +14,11 @@ class filemng {
 public:
     filemng() = default;
     explicit filemng(FILE *fp) noexcept : fp(fp) { }
-    filemng(const char*path, const char*mod) { fp = open(path, mod); }
+    filemng(const char*path, const char*mod) {
+        fp = open(path, mod);
+        if(fp == nullptr)
+            throw std::runtime_error("[!]Open file fail");
+    }
     ~filemng() { if(fp != nullptr) fclose(fp); }
 
     filemng(const filemng&) = delete;

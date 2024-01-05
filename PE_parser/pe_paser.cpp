@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 #include <windows.h>
 
@@ -60,7 +61,7 @@ void parse_dos_header() {
     WORD e_magic = 0;
     fread(&e_magic, 2, 1, fp);
     if(e_magic != 0x5A4D) {
-        throw string("[!]dos header magic error: ") + printmemory(&e_magic, 2);
+        throw std::runtime_error(string("[!]dos header magic error: ") + printmemory(&e_magic, 2));
     }
     _fseeki64(fp, 0x3C, SEEK_SET);
     fread(&e_lfanew, 4, 1, fp);
@@ -88,7 +89,7 @@ void parse_optional_header() {
     else if(opheader.Magic == 0x010B)
         is_x64 = false;
     else
-        throw string("[!]optional header magic error: ") + printmemory(&opheader.Magic, 2);
+        throw std::runtime_error(string("[!]optional header magic error: ") + printmemory(&opheader.Magic, 2));
     printbuffer.push_back(string("Magic: ") + printmemory(&opheader.Magic, 2));
     printbuffer.push_back(string("AddressOfEntryPoint: ") + printmemory(&opheader.AddressOfEntryPoint, 4));
     if(is_x64)
@@ -122,7 +123,7 @@ void parse_nt_header() {
     _fseeki64(fp, e_lfanew, SEEK_SET);
     fread(&Signature, 4, 1, fp);
     if(Signature != 0x4550) {
-        throw string("[!]nt header magic error: ") + printmemory(&Signature, 4);
+        throw std::runtime_error(string("[!]nt header magic error: ") + printmemory(&Signature, 4));
     }
     printbuffer.push_back("[*]NT header:");
     printbuffer.push_back(string("Signature: ") + printmemory(&Signature, 4));
@@ -166,7 +167,7 @@ DWORD rva_to_raw(DWORD rva) {
                     return raw;
                 }
     }
-    throw string("[!]rva to raw wrong. WRONG RVA: ") + printmemory(&rva, sizeof(rva));
+    throw std::runtime_error(string("[!]rva to raw wrong. WRONG RVA: ") + printmemory(&rva, sizeof(rva)));
 }
 
 void get_func_info(DWORD st_func_rva) {
@@ -347,7 +348,7 @@ int main(int argc, char *argv[]) {
     std::ios_base::sync_with_stdio(false);
     try {
         if(argc < 2) {
-            throw string("[!]Missing parameter: file_path");
+            throw std::runtime_error("[!]Missing parameter: file_path");
         }
         fp = clre::FileMng(argv[1], "rb");
         parse_dos_header();
@@ -356,9 +357,9 @@ int main(int argc, char *argv[]) {
         parse_iat();
         parse_eat();
         output();
-    } catch (const string &e) {
+    } catch (const std::exception &e) {
         output();
-        std::cout << e << "\n";
+        std::cout << e.what() << "\n";
     }
     std::cout << std::flush;
     system("pause");
