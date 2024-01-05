@@ -177,15 +177,9 @@ void get_func_info(DWORD st_func_rva) {
     printbuffer.push_back(string("rva: ") + printmemory(&st_func_rva, sizeof(st_func_rva))
         + "\traw: " + printmemory(&raw, sizeof(raw))
         + "\tordinal: " + printmemory(&ordinal, sizeof(ordinal)));
-    char c;
-    string name;
-    while(true) {
-        fread(&c, 1, 1, fp);
-        if(c == 0x00)
-            break;
-        name += c;
-    }
-    printbuffer.push_back(string("func name: ") + name);
+    char s[256];
+    fread(s, 1, 256, fp);
+    printbuffer.push_back(string("func name: ") + s);
 }
 
 void parse_INT(DWORD raw) {
