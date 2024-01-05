@@ -345,7 +345,7 @@ void parse_eat() {
             + "\tRVA" + printmemory(&vec_addr_rva[i], sizeof(DWORD))
             + "\tRAW" + printmemory(&addr_raw, sizeof(DWORD)));
     }
-
+    delete[] named_ordinal;
 }
 
 int main(int argc, char *argv[]) {
