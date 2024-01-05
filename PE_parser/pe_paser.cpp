@@ -140,7 +140,7 @@ void parse_section_header() {
         }
         return res;
     };
-    for(auto i = 0; i < NumberOfSections; i++) {
+    for(WORD i = 0; i < NumberOfSections; i++) {
         printbuffer.push_back(string("[*]section header ") + std::to_string(i+1) + " :");
         fread(&secheader, sizeof(secheader), 1, fp);
         section_header.push_back(secheader);
@@ -248,6 +248,7 @@ void parse_iat() {
 
         printbuffer.push_back("\n[*]function imported: ");
 
+        if(INT_raw == 0) INT_raw = IAT_raw;
         parse_INT(INT_raw);
 
         _fseeki64(fp, pos, SEEK_SET);
@@ -267,6 +268,84 @@ void parse_eat() {
     IMAGE_EXPORT_DIRECTORY ied;
     _fseeki64(fp, raw, SEEK_SET);
     fread(&ied, sizeof(IMAGE_EXPORT_DIRECTORY), 1, fp);
+
+    auto print_rva_raw = [](string name, DWORD rva, DWORD raw) {
+        printbuffer.push_back(name + " RVA: " + printmemory(&rva, 4)
+            + "\tRAW: " + printmemory(&raw, 4));
+    };
+
+    DWORD ied_name_raw = rva_to_raw(ied.Name);
+    _fseeki64(fp, ied_name_raw, SEEK_SET);
+    char s[256];
+    fread(s, 1, 256, fp);
+    printbuffer.push_back(string("DLL name: ") + s); 
+    printbuffer.push_back(string(60, '-'));
+    printbuffer.push_back(string("NumberOfFunctions: ") + printmemory(&ied.NumberOfFunctions, 4));
+    printbuffer.push_back(string("NumberOfNames: ") + printmemory(&ied.NumberOfNames, 4));
+
+    DWORD AddressOfFunctions_raw = rva_to_raw(ied.AddressOfFunctions);
+    DWORD AddressOfNames_raw = rva_to_raw(ied.AddressOfNames); 
+    DWORD AddressOfNameOrdinals_raw = rva_to_raw(ied.AddressOfNameOrdinals); 
+
+    print_rva_raw("AddressOfFunctions", ied.AddressOfFunctions, AddressOfFunctions_raw);
+    print_rva_raw("AddressOfNames", ied.AddressOfNames, AddressOfNames_raw);
+    print_rva_raw("AddressOfNameOrdinals", ied.AddressOfNameOrdinals, AddressOfNameOrdinals_raw);
+    printbuffer.push_back(string(60, '-'));
+    printbuffer.push_back("[*]named function: ");
+    bool *named_ordinal = new bool[ied.NumberOfFunctions];
+    for(DWORD i = 0; i < ied.NumberOfFunctions; i++) {
+        named_ordinal[i] = false;
+    }
+    vector<WORD> vec_ordinal;
+    vector<DWORD> vec_name_rva;
+    vector<DWORD> vec_addr_rva;
+    _fseeki64(fp, AddressOfNameOrdinals_raw, SEEK_SET);
+    for(DWORD i = 0; i < ied.NumberOfNames; i++) {
+        WORD ordinal;
+        fread(&ordinal, sizeof(WORD), 1, fp);
+        vec_ordinal.push_back(ordinal);
+        named_ordinal[ordinal] = true;
+    }
+    _fseeki64(fp, AddressOfNames_raw, SEEK_SET);
+    for(DWORD i = 0; i < ied.NumberOfNames; i++) {
+        DWORD name_rva;
+        fread(&name_rva, sizeof(DWORD), 1, fp);
+        vec_name_rva.push_back(name_rva);
+    }
+    _fseeki64(fp, AddressOfFunctions_raw, SEEK_SET);
+    for(DWORD i = 0; i < ied.NumberOfFunctions; i++) {
+        DWORD addr_rva;
+        fread(&addr_rva, sizeof(DWORD), 1, fp);
+        vec_addr_rva.push_back(addr_rva);
+    }
+    for(DWORD i = 0; i < ied.NumberOfNames; i++) {
+        WORD ordinal = vec_ordinal[i];
+        DWORD name_raw = rva_to_raw(vec_name_rva[i]);
+        char s[256];
+        _fseeki64(fp, name_raw, SEEK_SET);
+        fread(s, 1, 256, fp);
+        string name = s;
+        DWORD addr_raw = rva_to_raw(vec_addr_rva[ordinal]);
+        printbuffer.push_back(string("Ord: ") + printmemory(&ordinal, sizeof(ordinal))
+            + "\t" + name);
+        printbuffer.push_back(string("RVA: ") + printmemory(&vec_addr_rva[i], sizeof(DWORD))
+            + "\tRAW: " + printmemory(&addr_raw, sizeof(DWORD)));
+    }
+    printbuffer.push_back(string(60, '-'));
+    if(ied.NumberOfFunctions == ied.NumberOfNames) {
+        printbuffer.push_back("[*]no unamed function");
+        return;
+    }
+    printbuffer.push_back("[*]unamed function: ");
+    for(DWORD i = 0; i < ied.NumberOfFunctions; i++) {
+        if(named_ordinal[i] == true)
+            continue;
+        DWORD addr_raw = rva_to_raw(vec_addr_rva[i]);
+        printbuffer.push_back(string("Ord: ") + printmemory(&i, sizeof(WORD))
+            + "\tRVA" + printmemory(&vec_addr_rva[i], sizeof(DWORD))
+            + "\tRAW" + printmemory(&addr_raw, sizeof(DWORD)));
+    }
+
 }
 
 int main(int argc, char *argv[]) {
