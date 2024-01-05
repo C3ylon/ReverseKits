@@ -334,6 +334,7 @@ void parse_eat() {
     printbuffer.push_back(string(60, '-'));
     if(ied.NumberOfFunctions == ied.NumberOfNames) {
         printbuffer.push_back("[*]no unamed function");
+        delete[] named_ordinal;
         return;
     }
     printbuffer.push_back("[*]unamed function: ");
