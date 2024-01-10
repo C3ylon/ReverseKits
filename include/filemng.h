@@ -2,6 +2,7 @@
 #define FILEMNG__H_
 #include <cstdio>
 #include <stdexcept>
+#include <string>
 
 namespace clre {
 
@@ -17,7 +18,7 @@ public:
     filemng(const char*path, const char*mod) {
         fp = open(path, mod);
         if(fp == nullptr)
-            throw std::runtime_error("[!]Open file fail");
+            throw std::runtime_error(std::string("[!]Open file: ") + path + "fail");
     }
     ~filemng() { if(fp != nullptr) fclose(fp); }
 
@@ -38,7 +39,7 @@ public:
     filemng &operator =(filemng &&f) noexcept {
         if(&f == this)
             return *this;
-        if(fp!= nullptr)
+        if(fp!= nullptr && fp != f.fp)
             close(fp);
         fp = f.fp;
         f.fp = nullptr;
