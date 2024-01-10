@@ -214,7 +214,7 @@ void parse_iat() {
     DWORD iat_rva = import_directory.VirtualAddress;
     DWORD raw = rva_to_raw(iat_rva);
     DWORD size = import_directory.Size;
-    printbuffer.push_back(string("[*]IAT\nraw: ") + printmemory(&raw, 4)+ "\tsize: " + printmemory(&size, 4));
+    printbuffer.push_back(string("[*]IAT\nraw: ") + printmemory(&raw, 4) + "\tsize: " + printmemory(&size, 4));
     IMAGE_IMPORT_DESCRIPTOR iid;
     const static IMAGE_IMPORT_DESCRIPTOR iid_zero_end = { };
     _fseeki64(fp, raw, SEEK_SET);
