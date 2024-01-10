@@ -2,6 +2,7 @@
 #define TRAVERSE_FILES__H_
 
 #include <sys/stat.h>
+#include <stdexcept>
 
 template <typename T, typename ...Args>
 void TraversalFiles(const char *, T, Args...);
@@ -32,8 +33,8 @@ void TraversalSubdir(const __finddata64_t &FindData,
         FileOp(fullpath.c_str(), argc...);
         end = clock();
         std::cout << "\t" "time: " << (double)(end - start) / CLOCKS_PER_SEC << "s\n";
-    } catch (...) {
-        std::cout << "\n";
+    } catch (const std::exception &e) {
+        std::cout << e.what() << "\n";
     }
 }
 
@@ -43,7 +44,7 @@ void TraversalFolder(const char *dir, T FileOp, Args ...argc) {
     struct __finddata64_t FindData;
     intptr_t handle = _findfirst64(dirNew.c_str(), &FindData);
     if (handle == -1) {
-        throw "[!]find path fail";
+        throw std::runtime_error("[!]find path fail");
     }
     do {
         TraversalSubdir(FindData, dir, FileOp, argc...);
@@ -55,7 +56,7 @@ template <typename T, typename ...Args>
 void TraversalFiles(const char *dir, T FileOp, Args ...argc) {
     struct _stat64 sbuff;
     if(_stat64(dir, &sbuff) == -1) {
-        throw "[!]find file or folder path fail";
+        throw std::runtime_error("[!]find file or folder path fail");
     }
     bool is_reg = sbuff.st_mode & _S_IFREG;
     bool is_dir = sbuff.st_mode & S_IFDIR;

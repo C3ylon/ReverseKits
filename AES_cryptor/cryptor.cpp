@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <vector>
 #include <time.h>
+#include <stdexcept>
 #include "myaes.h"
 #include "TraverseFiles.h"
 
@@ -38,7 +39,7 @@ static void EncodeFile(FILE *fp, const std::string &filepath) {
     if ((*(size_t*)buff & 0xFFFFFFFFFFFFFF) == 0xC390909090E9E8) {
         fclose(fp);
         FileOpErr.push_back(std::string("[!]file has been encode : ") + filepath);
-        throw FileOpErr.back();
+        throw std::runtime_error(FileOpErr.back());
     }
     
     std::string filepathbackup = filepath + ".tmp";
@@ -46,7 +47,7 @@ static void EncodeFile(FILE *fp, const std::string &filepath) {
     if(!tmp) {
         fclose(fp);
         FileOpErr.push_back(std::string("[!]open file : ") + filepathbackup + " fail");
-        throw FileOpErr.back();
+        throw std::runtime_error(FileOpErr.back());
     }
 
     size_t szRead = 0, szFile = 0;
@@ -80,7 +81,7 @@ static void DecodeFile(FILE *fp, const std::string &filepath) {
     if ((*(size_t*)buff & 0xFFFFFFFFFFFFFF) != 0xC390909090E9E8) {
         fclose(fp);
         FileOpErr.push_back(std::string("[!]file hasn't been encode : ") + filepath);
-        throw FileOpErr.back();
+        throw std::runtime_error(FileOpErr.back());
     }
 
     std::string filepathbackup = filepath + ".tmp";
@@ -88,7 +89,7 @@ static void DecodeFile(FILE *fp, const std::string &filepath) {
     if(!tmp) {
         fclose(fp);
         FileOpErr.push_back(std::string("[!]open file : ") + filepathbackup + " fail");
-        throw FileOpErr.back();
+        throw std::runtime_error(FileOpErr.back());
     }
 
     size_t chunks = 0, szRead = 0;
@@ -130,7 +131,7 @@ static void EncodeAndDecodeFile(const char *dirpath)
     FILE* fp = fopen(filepath.c_str(), "rb+");
     if(!fp) {
         FileOpErr.push_back(std::string("[!]open file : ") + filepath + " fall");
-        throw FileOpErr.back();
+        throw std::runtime_error(FileOpErr.back());
     }
     if (if_encode) {
         EncodeFile(fp, filepath);
@@ -150,7 +151,7 @@ static void GenKey() {
 
 static void CmdUI(int argc, char *argv[]) {
     if(argc < 2) {
-        throw "[!]Missing parameter: file_path";
+        throw std::runtime_error("[!]Missing parameter: file_path");
     }
     std::cout << "[*]BEGIN\n" "[FILE_PATH]" << argv[1] << "\n";
     std::cout << std::flush;
@@ -176,10 +177,8 @@ int main(int argc, char *argv[]) {
     try {
         CmdUI(argc, argv);
         PrintFinalInfo();
-    } catch(const char *e) {
-        std::cout << e << "\n";
-    } catch(const std::string &e) {
-        std::cout << e << "\n";
+    } catch(const std::exception &e) {
+        std::cout << e.what() << "\n";
     }
 
     std::cout << std::flush;
