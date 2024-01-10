@@ -1,3 +1,6 @@
+#ifndef TRAVERSE_FILES__H_
+#define TRAVERSE_FILES__H_
+
 #include <sys/stat.h>
 
 template <typename T, typename ...Args>
@@ -66,3 +69,5 @@ void TraversalFiles(const char *dir, T FileOp, Args ...argc) {
         TraversalFolder(dir, FileOp, argc...);
     }
 }
+
+#endif
