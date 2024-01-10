@@ -158,7 +158,7 @@ static void CmdUI(int argc, char *argv[]) {
     std::cin >> if_encode;
     GenKey();
     start = clock();
-    TraversalFiles(argv[1], EncodeAndDecodeFile);
+    clre::TraversalFiles(argv[1], EncodeAndDecodeFile);
 }
 
 static void PrintFinalInfo() {

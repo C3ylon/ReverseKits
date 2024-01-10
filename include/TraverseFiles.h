@@ -4,6 +4,8 @@
 #include <sys/stat.h>
 #include <stdexcept>
 
+namespace clre{
+
 template <typename T, typename ...Args>
 void TraversalFiles(const char *, T, Args...);
 
@@ -69,6 +71,8 @@ void TraversalFiles(const char *dir, T FileOp, Args ...argc) {
     else if(is_dir == true) {
         TraversalFolder(dir, FileOp, argc...);
     }
+}
+
 }
 
 #endif
