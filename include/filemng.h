@@ -39,10 +39,13 @@ public:
     filemng &operator =(filemng &&f) noexcept {
         if(&f == this)
             return *this;
-        if(fp!= nullptr && fp != f.fp){
-            close(fp);
-            fp = f.fp;
+        if(fp == f.fp) {
+            f.fp = nullptr;
+            return *this;
         }
+        if(fp != nullptr)
+            close(fp);
+        fp = f.fp;
         f.fp = nullptr;
         return *this;
     }
