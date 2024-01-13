@@ -7,16 +7,16 @@
 namespace clre {
 
 template <typename Fnclose = decltype(&fclose),
-          Fnclose close = &fclose,
+          Fnclose _close = &fclose,
           typename Fnopen = decltype(&fopen),
-          Fnopen open = &fopen>
+          Fnopen _open = &fopen>
 class filemng {
     std::FILE *fp = nullptr;
 public:
     filemng() = default;
     explicit filemng(FILE *fp) noexcept : fp(fp) { }
     filemng(const char*path, const char*mod) {
-        fp = open(path, mod);
+        fp = _open(path, mod);
         if(fp == nullptr)
             throw std::runtime_error(std::string("[!]Open file: ") + path + "fail");
     }
@@ -29,7 +29,7 @@ public:
         if(filemng::fp == fp)
             return *this;
         if(filemng::fp != nullptr)
-            close(filemng::fp);
+            _close(filemng::fp);
         filemng::fp = fp;
         return *this;
     }
@@ -44,7 +44,7 @@ public:
             return *this;
         }
         if(fp != nullptr)
-            close(fp);
+            _close(fp);
         fp = f.fp;
         f.fp = nullptr;
         return *this;
@@ -52,6 +52,7 @@ public:
     explicit operator bool() const noexcept { return fp != nullptr; }
     operator FILE*() const noexcept { return fp; }
     FILE *get() const noexcept { return fp; }
+    viod close() const noexcept { _close(fp); fp = nullptr; }
 };
 
 using FileMng = filemng<>;
