@@ -52,7 +52,7 @@ public:
     explicit operator bool() const noexcept { return fp != nullptr; }
     operator FILE*() const noexcept { return fp; }
     FILE *get() const noexcept { return fp; }
-    viod close() const noexcept { _close(fp); fp = nullptr; }
+    void close() const noexcept { _close(fp); fp = nullptr; }
 };
 
 using FileMng = filemng<>;
