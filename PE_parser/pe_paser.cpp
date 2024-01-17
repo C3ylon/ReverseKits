@@ -33,6 +33,7 @@ WORD NumberOfSections;
 vector<IMAGE_SECTION_HEADER> section_header;
 IMAGE_DATA_DIRECTORY import_directory;
 IMAGE_DATA_DIRECTORY export_directory;
+IMAGE_DATA_DIRECTORY reloc_directory;
 
 string printmemory(void *addr, size_t size) {
     string res;
@@ -114,6 +115,7 @@ void parse_optional_header() {
     printbuffer.push_back(printmemory(datadirectory, sizeof(IMAGE_DATA_DIRECTORY)*NumberOfRvaAndSizes));
     memcpy(&import_directory, &datadirectory[1], sizeof(IMAGE_DATA_DIRECTORY));
     memcpy(&export_directory, &datadirectory[0], sizeof(IMAGE_DATA_DIRECTORY));
+    memcpy(&reloc_directory, &datadirectory[5], sizeof(IMAGE_DATA_DIRECTORY));
     delete[] datadirectory;
 }
 
@@ -344,6 +346,24 @@ void parse_eat() {
     delete[] named_ordinal;
 }
 
+void parse_rt() {
+    printbuffer.push_back(string(60, '='));
+    DWORD rt_rva = reloc_directory.VirtualAddress;
+    DWORD raw;
+    try {
+        raw = rva_to_raw(rt_rva);
+    } catch (std::exception &e) {
+        printbuffer.push_back("[*]Don't have relocation table");
+        return;
+    }
+    DWORD size = reloc_directory.Size;
+    printbuffer.push_back(string("[*]Relocation Table\nraw: ") + printmemory(&raw, 4) + "\tsize: " + printmemory(&size, 4));
+    IMAGE_BASE_RELOCATION ibr;
+    const static IMAGE_BASE_RELOCATION ibr_zero_end = { };
+    _fseeki64(fp, raw, SEEK_SET);
+    
+}
+
 int main(int argc, char *argv[]) {
     std::ios_base::sync_with_stdio(false);
     try {
@@ -356,6 +376,7 @@ int main(int argc, char *argv[]) {
         parse_section_header();
         parse_iat();
         parse_eat();
+        parse_rt();
         output();
     } catch (const std::exception &e) {
         output();
