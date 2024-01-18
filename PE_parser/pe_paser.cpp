@@ -358,10 +358,7 @@ void parse_rt() {
     }
     DWORD size = reloc_directory.Size;
     printbuffer.push_back(string("[*]Relocation Table\nraw: ") + printmemory(&raw, 4) + "\tsize: " + printmemory(&size, 4));
-    IMAGE_BASE_RELOCATION ibr;
-    const static IMAGE_BASE_RELOCATION ibr_zero_end = { };
-    _fseeki64(fp, raw, SEEK_SET);
-    
+    // IMAGE_BASE_RELOCATION ibr; 
 }
 
 int main(int argc, char *argv[]) {
