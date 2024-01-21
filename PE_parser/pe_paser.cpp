@@ -30,6 +30,9 @@ bool is_x64;
 
 DWORD e_lfanew;
 WORD NumberOfSections;
+decltype(_ftelli64(nullptr)) sec_header_raw;
+DWORD FileAlignment;
+DWORD SizeOfHeaders;
 vector<IMAGE_SECTION_HEADER> section_header;
 IMAGE_DATA_DIRECTORY import_directory;
 IMAGE_DATA_DIRECTORY export_directory;
@@ -79,6 +82,7 @@ void parse_file_header() {
     NumberOfSections = fileheader.NumberOfSections;
     printbuffer.push_back(string("SizeOfOptionalHeader: ") + printmemory(&fileheader.SizeOfOptionalHeader, 2));
     printbuffer.push_back(string("Characteristics: ") + printmemory(&fileheader.Characteristics, 2));
+    sec_header_raw = _ftelli64(fp) + fileheader.SizeOfOptionalHeader;
 }
 
 void parse_optional_header() {
@@ -99,8 +103,10 @@ void parse_optional_header() {
         printbuffer.push_back(string("ImageBase: ") + printmemory((char*)&opheader.ImageBase + 4, 4));
     printbuffer.push_back(string("SectionAlignment: ") + printmemory(&opheader.SectionAlignment, 4));
     printbuffer.push_back(string("FileAlignment: ") + printmemory(&opheader.FileAlignment, 4));
+    FileAlignment = opheader.FileAlignment;
     printbuffer.push_back(string("SizeOfImage: ") + printmemory(&opheader.SizeOfImage, 4));
     printbuffer.push_back(string("SizeOfHeaders: ") + printmemory(&opheader.SizeOfHeaders, 4));
+    SizeOfHeaders = opheader.SizeOfHeaders;
     printbuffer.push_back(string("Subsystem: ") + printmemory(&opheader.Subsystem, 2));
     DWORD NumberOfRvaAndSizes;
     if(is_x64)
@@ -135,6 +141,9 @@ void parse_nt_header() {
 
 void parse_section_header() {
     printbuffer.push_back(string(60, '='));
+    printbuffer.push_back(string("[*]section header raw: ") + printmemory(&sec_header_raw, 4));
+    printbuffer.push_back(string(60, '-'));
+    _fseeki64(fp, sec_header_raw, SEEK_SET);
     IMAGE_SECTION_HEADER secheader;
     auto print_section_name = [&]() -> string {
         string res;
@@ -159,13 +168,14 @@ void parse_section_header() {
 }
 
 DWORD rva_to_raw(DWORD rva) {
-    DWORD raw = 0;
+    if(rva < SizeOfHeaders)
+        return rva;
     for(size_t i = 0; i < section_header.size(); i++) {
         if(rva >= section_header[i].VirtualAddress
             && (i == section_header.size()-1
                 || rva < section_header[i+1].VirtualAddress)) {
                     DWORD offset = rva - section_header[i].VirtualAddress;
-                    raw = section_header[i].PointerToRawData + offset;
+                    DWORD raw = section_header[i].PointerToRawData / FileAlignment * FileAlignment + offset;
                     return raw;
                 }
     }
@@ -214,7 +224,26 @@ void parse_INT(DWORD raw) {
 void parse_iat() {
     printbuffer.push_back(string(60, '='));
     DWORD iat_rva = import_directory.VirtualAddress;
-    DWORD raw = rva_to_raw(iat_rva);
+    DWORD raw;
+    DWORD end_of_section = 0;
+    if(iat_rva < SizeOfHeaders) {
+        raw = iat_rva;
+        end_of_section = SizeOfHeaders;
+    } else {
+        for(size_t i = 0; i < section_header.size(); i++) {
+            if(iat_rva >= section_header[i].VirtualAddress
+                && (i == section_header.size()-1
+                    || iat_rva < section_header[i+1].VirtualAddress)) {
+                        DWORD offset = iat_rva - section_header[i].VirtualAddress;
+                        DWORD _raw = section_header[i].PointerToRawData / FileAlignment * FileAlignment + offset;
+                        raw = _raw;
+                        end_of_section = section_header[i].PointerToRawData + section_header[i].SizeOfRawData;
+                        break;
+                    }
+        }
+        if(end_of_section == 0)
+            throw std::runtime_error(string("[!]rva to raw wrong. WRONG RVA: ") + printmemory(&iat_rva, sizeof(iat_rva)));
+    }
     DWORD size = import_directory.Size;
     printbuffer.push_back(string("[*]IAT\nraw: ") + printmemory(&raw, 4) + "\tsize: " + printmemory(&size, 4));
     IMAGE_IMPORT_DESCRIPTOR iid;
@@ -249,6 +278,10 @@ void parse_iat() {
         parse_INT(INT_raw);
 
         _fseeki64(fp, pos, SEEK_SET);
+
+        if(_ftelli64(fp) >= end_of_section) {
+            break;
+        }
     }
 }
 
@@ -349,10 +382,8 @@ void parse_eat() {
 void parse_rt() {
     printbuffer.push_back(string(60, '='));
     DWORD rt_rva = reloc_directory.VirtualAddress;
-    DWORD raw;
-    try {
-        raw = rva_to_raw(rt_rva);
-    } catch (std::exception &e) {
+    DWORD raw = rva_to_raw(rt_rva);
+    if(raw == 0) {
         printbuffer.push_back("[*]Don't have relocation table");
         return;
     }
