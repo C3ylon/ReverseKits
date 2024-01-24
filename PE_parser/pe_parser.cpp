@@ -192,7 +192,7 @@ void get_func_info(DWORD st_func_rva) {
         + "\tordinal: " + printmemory(&ordinal, sizeof(ordinal)));
     char s[256];
     fread(s, 1, 256, fp);
-    s[256] = 0;
+    s[255] = 0;
     printbuffer.push_back(string("func name: ") + s);
 }
 
@@ -206,7 +206,7 @@ void parse_INT(DWORD raw) {
         else
             fread(&st_func_rva, size_of_x32, 1, fp);
         if(st_func_rva != 0)
-            vec_st_func.push_back(st_func_rva);
+            vec_st_func.push_back((DWORD)st_func_rva);
         else
             break;
     }
@@ -268,7 +268,7 @@ void parse_iat() {
         _fseeki64(fp, name_raw, SEEK_SET);
         char s[256];
         fread(s, 1, 256, fp);
-        s[256] = 0;
+        s[255] = 0;
         printbuffer.push_back(string("DLL name: ") + s); 
         print_rva_raw("OriginalFirstThunk", iid.OriginalFirstThunk, INT_raw);
         print_rva_raw("Name", iid.Name, name_raw);
@@ -310,7 +310,7 @@ void parse_eat() {
     _fseeki64(fp, ied_name_raw, SEEK_SET);
     char s[256];
     fread(s, 1, 256, fp);
-    s[256] = 0;
+    s[255] = 0;
     printbuffer.push_back(string("DLL name: ") + s); 
     printbuffer.push_back(string(60, '-'));
     printbuffer.push_back(string("NumberOfFunctions: ") + printmemory(&ied.NumberOfFunctions, 4));
@@ -357,7 +357,7 @@ void parse_eat() {
         char s[256];
         _fseeki64(fp, name_raw, SEEK_SET);
         fread(s, 1, 256, fp);
-        s[256] = 0;
+        s[255] = 0;
         string name = s;
         DWORD addr_raw = rva_to_raw(vec_addr_rva[ordinal]);
         printbuffer.push_back(string("Ord: ") + printmemory(&ordinal, sizeof(ordinal))
