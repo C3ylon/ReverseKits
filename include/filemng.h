@@ -15,8 +15,8 @@ class filemng {
 public:
     filemng() = default;
     filemng(FILE *fp) : fp(fp) { 
-    if(fp == nullptr)
-        throw std::runtime_error(std::string("[!]fp is a nullptr"));
+        if(fp == nullptr)
+            throw std::runtime_error(std::string("[!]fp is a nullptr"));
     }
     filemng(const char *path, const char *mod) {
         fp = _open(path, mod);
