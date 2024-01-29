@@ -14,11 +14,17 @@ class filemng {
     std::FILE *fp = nullptr;
 public:
     filemng() = default;
-    explicit filemng(FILE *fp) noexcept : fp(fp) { }
-    filemng(const char*path, const char*mod) {
+    filemng(FILE *fp) : fp(fp) { 
+    if(fp == nullptr)
+        throw std::runtime_error(std::string("[!]fp is a nullptr"));
+    }
+    filemng(const char *path, const char *mod) {
         fp = _open(path, mod);
         if(fp == nullptr)
             throw std::runtime_error(std::string("[!]Open file: ") + path + "fail");
+    }
+    filemng(const std::string &path, const char *mod) {
+        filemng(path.c_str(), mod);
     }
     ~filemng() { if(fp != nullptr) fclose(fp); }
 
