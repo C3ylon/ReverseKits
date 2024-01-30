@@ -23,15 +23,18 @@ public:
         if(fp == nullptr)
             throw std::runtime_error(std::string("[!]Open file: ") + path + "fail");
     }
-    filemng(const std::string &path, const char *mod) {
-        filemng(path.c_str(), mod);
+    filemng(const std::string &path, const char *mod) :
+        filemng(path.c_str(), mod) {
     }
-    ~filemng() { if(fp != nullptr) fclose(fp); }
+    ~filemng() { if(fp != nullptr) _close(fp); }
 
     filemng(const filemng&) = delete;
     filemng &operator =(const filemng&) =delete;
 
-    filemng &operator =(FILE *const fp) noexcept {
+    filemng &operator =(FILE *const fp) {
+        if(fp == nullptr) {
+            throw std::runtime_error("[!]fp is a nullptr");
+        }
         if(filemng::fp == fp)
             return *this;
         if(filemng::fp != nullptr)
@@ -58,7 +61,7 @@ public:
     explicit operator bool() const noexcept { return fp != nullptr; }
     operator FILE*() const noexcept { return fp; }
     FILE *get() const noexcept { return fp; }
-    void close() const noexcept { _close(fp); fp = nullptr; }
+    void close() { _close(fp); fp = nullptr; }
 };
 
 using FileMng = filemng<>;
