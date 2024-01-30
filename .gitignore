@@ -2,3 +2,4 @@
 test*.*
 *.exe
 log*.*
+*.dll
