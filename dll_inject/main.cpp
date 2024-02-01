@@ -15,14 +15,17 @@ void InjectDll(DWORD pid, const char *dllpath) {
     auto thread_proc = GetProcAddress(hMod, "LoadLibraryA");
     if(thread_proc == nullptr) {
         CloseHandle(hProcess);
+        VirtualFreeEx(hProcess, pRemotebuffer, 0, MEM_RELEASE);
         throw std::runtime_error("GetProcAddress LoadLibraryA failed");
     }
     auto hThread = CreateRemoteThread(hProcess, nullptr, 0, *(LPTHREAD_START_ROUTINE *)&thread_proc, pRemotebuffer, 0, nullptr);
     if(hThread == nullptr) {
         CloseHandle(hProcess);
+        VirtualFreeEx(hProcess, pRemotebuffer, 0, MEM_RELEASE);
         throw std::runtime_error("CreateRemoteThread failed");
     }
     WaitForSingleObject(hThread, INFINITE);
+    VirtualFreeEx(hProcess, pRemotebuffer, 0, MEM_RELEASE);
     CloseHandle(hThread);
     CloseHandle(hProcess);
 }
