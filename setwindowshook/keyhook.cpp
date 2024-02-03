@@ -108,9 +108,9 @@ LRESULT CALLBACK KeyboardProc(int code, WPARAM wParam, LPARAM lParam)
 extern "C" {
 #endif
 	// __declspec(dllexport) 
-    decltype(g_hHook) HookStart()
+    auto HookStart() -> decltype(g_hHook)
 	{
-		g_hHook = SetWindowsHookExA(WH_KEYBOARD, KeyboardProc, g_hInstance, 28260);
+		g_hHook = SetWindowsHookExA(WH_KEYBOARD, KeyboardProc, g_hInstance, 0);
 		// g_hHook = SetWindowsHookExA(WH_KEYBOARD_LL, KeyboardProcLL, g_hInstance, 4052);
 		return g_hHook;
 	}

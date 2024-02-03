@@ -19,9 +19,8 @@ int main() {
         printf("LoadLibrary(%s) failed!!! [%d]", DEF_DLL_NAME, (int)GetLastError());
         return 0;
     }
-	auto tmp = GetProcAddress(hDll, DEF_HOOKSTART);
-	HookStart = *(PFN_HOOKSTART *)&tmp;
-	HookStop = (PFN_HOOKSTOP)GetProcAddress(hDll, DEF_HOOKSTOP);
+	(FARPROC &)HookStart = GetProcAddress(hDll, DEF_HOOKSTART);
+	(FARPROC &)HookStop = GetProcAddress(hDll, DEF_HOOKSTOP);
 
 	
 
