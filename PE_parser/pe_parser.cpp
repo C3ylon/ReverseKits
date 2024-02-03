@@ -215,7 +215,7 @@ void parse_INT(DWORD raw) {
         printbuffer.push_back(string("Number ") + std::to_string(count));
         try {
             get_func_info(i);
-        } catch (const std::exception &e) {
+        } catch (std::exception &e) {
             printbuffer.push_back(e.what());
         }
         count++;
@@ -410,7 +410,7 @@ int main(int argc, char *argv[]) {
         parse_eat();
         parse_rt();
         output();
-    } catch (const std::exception &e) {
+    } catch (std::exception &e) {
         output();
         std::cout << e.what() << "\n";
     }
