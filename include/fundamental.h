@@ -33,7 +33,6 @@ void InjectDll(DWORD pid, const char *dllpath) {
     if(hProcess == nullptr)
         throw std::runtime_error("OpenProcess failed");
     auto pRemotebuffer = VirtualAllocEx(hProcess, nullptr, pathsize, MEM_COMMIT, PAGE_READWRITE);
-    cout << "remote buffer address: " << pRemotebuffer << endl;
     WriteProcessMemory(hProcess, pRemotebuffer, dllpath, pathsize, nullptr);
     auto hMod = GetModuleHandleA("kernel32.dll");
     auto thread_proc = GetProcAddress(hMod, "LoadLibraryA");
