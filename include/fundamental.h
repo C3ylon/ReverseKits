@@ -6,6 +6,7 @@ namespace clre {
 inline size_t ReadMemory(HANDLE hProcess, const void *dst_addr, void *buffer, size_t size); 
 inline size_t WriteMemory(HANDLE hProcess, void *dst_addr, const void *buffer, size_t size); 
 
+inline void GetModInfo(DWORD pid, MODULEENTRY32 &me, const char *dllname);
 inline void InjectDll(HANDLE hProcess, const char *dllpath);
 inline void EjectDll(HANDLE hProcess, DWORD pid, const char *dllname);
 inline void *GetBaseAddress(HANDLE hProcess);
@@ -26,6 +27,23 @@ size_t WriteMemory(HANDLE hProcess, void *dst_addr, const void *buffer, size_t s
     WriteProcessMemory(hProcess, dst_addr, buffer, size, &BytesWritten);
     VirtualProtectEx(hProcess, dst_addr, size, oldprotect, &oldprotect);
     return BytesWritten;
+}
+
+void GetModInfo(DWORD pid, MODULEENTRY32 &me, const char *dllname) {
+    auto hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid);
+    me.dwSize = sizeof(me);
+    bool found = false;
+    bool more = Module32First(hSnapshot, &me);
+    for( ; more; more = Module32Next(hSnapshot, &me)) {
+        if(string(me.szModule) == string(dllname)
+            || string(me.szExePath) == string(dllname)) {
+                found = true;
+                break;
+            }
+    }
+    CloseHandle(hSnapshot);
+    if(found == false)
+        throw std::runtime_error("Find Module Entry failed");
 }
 
 void InjectDll(HANDLE hProcess, const char *dllpath) {
@@ -49,21 +67,8 @@ void InjectDll(HANDLE hProcess, const char *dllpath) {
 }
 
 void EjectDll(HANDLE hProcess, DWORD pid, const char *dllname) {
-    auto hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid);
     MODULEENTRY32 me;
-    me.dwSize = sizeof(me);
-    bool found = false;
-    bool more = Module32First(hSnapshot, &me);
-    for( ; more; more = Module32Next(hSnapshot, &me)) {
-        if(string(me.szModule) == string(dllname)
-            || string(me.szExePath) == string(dllname)) {
-                found = true;
-                break;
-            }
-    }
-    CloseHandle(hSnapshot);
-    if(found == false)
-        throw std::runtime_error("Find Module Entry failed");
+    GetModInfo(pid, me, dllname);
     auto hMod = GetModuleHandleA("kernel32.dll");
     auto thread_proc = GetProcAddress(hMod, "FreeLibrary");
     auto hThread = CreateRemoteThread(hProcess, nullptr, 0, *(LPTHREAD_START_ROUTINE *)&thread_proc, me.modBaseAddr, 0, nullptr);
