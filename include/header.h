@@ -5,6 +5,7 @@
 // Exclude rarely-used stuff from Windows headers
 #include <windows.h>
 #include <tlhelp32.h>
+#include <psapi.h>
 
 #undef Module32First
 #undef Module32Next
