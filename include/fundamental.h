@@ -94,7 +94,7 @@ void *GetProcAddressEx64(HANDLE hProcess, HMODULE hModule, const char *lpProcNam
     DWORD ntoffset;
     ReadMemory(hProcess, real_rva(0x3C), &ntoffset, sizeof(DWORD));
     DWORD eat_rva;
-    ReadMemory(hProcess, (void*)((size_t)real_rva(ntoffset) + 0x88), &eat_rva, sizeof(DWORD));
+    ReadMemory(hProcess, real_rva(ntoffset + 0x88), &eat_rva, sizeof(DWORD));
     IMAGE_EXPORT_DIRECTORY ied;
     ReadMemory(hProcess, real_rva(eat_rva), &ied, sizeof(ied));
     auto name_array_rva = (DWORD*)real_rva(ied.AddressOfNames);
