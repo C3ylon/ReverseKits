@@ -9,7 +9,7 @@ inline size_t WriteMemory(HANDLE hProcess, void *dst_addr, const void *buffer, s
 inline MODULEENTRY32 GetModInfo(DWORD pid, const char *dllname);
 inline void InjectDll(HANDLE hProcess, const char *dllpath);
 inline void EjectDll(HANDLE hProcess, DWORD pid, const char *dllname);
-inline void *GetBaseAddress(HANDLE hProcess);
+inline void *GetImageBase(HANDLE hProcess);
 inline void *GetProcAddressEx64(HANDLE hProcess, HMODULE hModule, const char *lpProcName);
 
 size_t ReadMemory(HANDLE hProcess, const void *dst_addr, void *buffer, size_t size) {
@@ -78,7 +78,7 @@ void EjectDll(HANDLE hProcess, DWORD pid, const char *dllname) {
     CloseHandle(hThread);
 }
 
-void *GetBaseAddress(HANDLE hProcess) {
+void *GetImageBase(HANDLE hProcess) {
     HMODULE lphModule[1024] = { };
     DWORD lpcbNeeded = 0;
     if (EnumProcessModulesEx(hProcess, lphModule, sizeof(lphModule), &lpcbNeeded, LIST_MODULES_ALL) == false) {
