@@ -10,6 +10,7 @@ inline MODULEENTRY32 GetModInfo(DWORD pid, const char *dllname);
 inline void InjectDll(HANDLE hProcess, const char *dllpath);
 inline void EjectDll(HANDLE hProcess, DWORD pid, const char *dllname);
 inline void *GetBaseAddress(HANDLE hProcess);
+inline void *GetProcAddressEx64(HANDLE hProcess, HMODULE hModule, const char *lpProcName);
 
 size_t ReadMemory(HANDLE hProcess, const void *dst_addr, void *buffer, size_t size) {
     DWORD oldprotect;
@@ -88,6 +89,38 @@ void *GetBaseAddress(HANDLE hProcess) {
     return (void*)lphModule[0];
 }
 
+void *GetProcAddressEx64(HANDLE hProcess, HMODULE hModule, const char *lpProcName) {
+    auto real_rva = [hModule](DWORD rva) { return (void*)((size_t)hModule + rva); };
+    DWORD ntoffset;
+    ReadMemory(hProcess, real_rva(0x3C), &ntoffset, sizeof(DWORD));
+    DWORD eat_rva;
+    ReadMemory(hProcess, (void*)((size_t)real_rva(ntoffset) + 0x88), &eat_rva, sizeof(DWORD));
+    IMAGE_EXPORT_DIRECTORY ied;
+    ReadMemory(hProcess, real_rva(eat_rva), &ied, sizeof(ied));
+    auto name_array_rva = (DWORD*)real_rva(ied.AddressOfNames);
+    bool found = false;
+    DWORD ordinal = 0;
+    for( ; ordinal < ied.NumberOfNames; ordinal++) {
+        DWORD name_rva;
+        ReadMemory(hProcess, &name_array_rva[ordinal], &name_rva, sizeof(DWORD));
+        char name[MAX_PATH];
+        ReadMemory(hProcess, real_rva(name_rva), name, MAX_PATH);
+        name[MAX_PATH - 1] = '\0';
+        if(string(name) == string(lpProcName)) {
+            found = true;
+            break;
+        }
+    }
+    if(found == false)
+        throw std::runtime_error("Can't find ProcName in EAT");
+    auto ordinal_arr_rva = (WORD*)real_rva(ied.AddressOfNameOrdinals);
+    ReadMemory(hProcess, &ordinal_arr_rva[ordinal], &ordinal, sizeof(WORD));
+    ordinal = (WORD)ordinal;
+    auto funcaddr_arr_rva = (DWORD*)real_rva(ied.AddressOfFunctions);
+    DWORD funcaddr_rva;
+    ReadMemory(hProcess, &funcaddr_arr_rva[ordinal], &funcaddr_rva, sizeof(DWORD));
+    return real_rva(funcaddr_rva);
+}
 
 }
 
