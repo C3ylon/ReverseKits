@@ -1,28 +1,26 @@
-#include "windows.h"
-#include <iostream>
-#include <string>
-
+#include "header.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-	int __stdcall MyMessageBox(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType);
+int __stdcall MyMessageBox(HWND hWnd, char *lpText, LPCSTR lpCaption, UINT uType) {
+    string s = lpText;
+    for(size_t i = 0; i < s.length(); i++) {
+        if(s[i] >= 'a' && s[i] <= 'z') {
+            s[i] -= 0x20;
+        }
+    }
+
+    return MessageBoxA(hWnd, s.c_str(), lpCaption, uType);
+}
+
+
 #ifdef __cplusplus
 }
 #endif
 
-int __stdcall MyMessageBox(HWND hWnd, char *lpText, LPCSTR lpCaption, UINT uType) {
-    DWORD oldprotect;
-    VirtualProtectEx(GetCurrentProcess(), lpText, 3, PAGE_EXECUTE_READWRITE, &oldprotect);
-    for(int i = 0; i < 3; i++) {
-        if(lpText[i] >= 'a' && lpText[i] <= 'z') {
-            lpText[i] -= 0x20;
-        }
-    }
-    VirtualProtectEx(GetCurrentProcess(), lpText, 3, oldprotect, &oldprotect);
-    return MessageBoxA(hWnd, lpText, lpCaption, uType);
-}
+
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvReserved) {
     (void)hinstDLL;
