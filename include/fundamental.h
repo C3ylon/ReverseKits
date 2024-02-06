@@ -59,7 +59,7 @@ void InjectDll(HANDLE hProcess, const char *dllpath) {
         VirtualFreeEx(hProcess, pRemotebuffer, 0, MEM_RELEASE);
         throw std::runtime_error("GetProcAddress LoadLibraryA failed");
     }
-    auto hThread = CreateRemoteThread(hProcess, nullptr, 0, *(LPTHREAD_START_ROUTINE *)&thread_proc, pRemotebuffer, 0, nullptr);
+    auto hThread = CreateRemoteThread(hProcess, nullptr, 0, (LPTHREAD_START_ROUTINE &)thread_proc, pRemotebuffer, 0, nullptr);
     if(hThread == nullptr) {
         VirtualFreeEx(hProcess, pRemotebuffer, 0, MEM_RELEASE);
         throw std::runtime_error("CreateRemoteThread failed");
@@ -73,7 +73,7 @@ void EjectDll(HANDLE hProcess, DWORD pid, const char *dllname) {
     auto me = GetModInfo(pid, dllname);
     auto hMod = GetModuleHandleA("kernel32.dll");
     auto thread_proc = GetProcAddress(hMod, "FreeLibrary");
-    auto hThread = CreateRemoteThread(hProcess, nullptr, 0, *(LPTHREAD_START_ROUTINE *)&thread_proc, me.hModule, 0, nullptr);
+    auto hThread = CreateRemoteThread(hProcess, nullptr, 0, (LPTHREAD_START_ROUTINE &)thread_proc, me.hModule, 0, nullptr);
     WaitForSingleObject(hThread, INFINITE);
     CloseHandle(hThread);
 }
