@@ -14,7 +14,7 @@ inline void *GetProcAddressEx64(HANDLE hProcess, HMODULE hModule, const char *lp
 
 size_t ReadMemory(HANDLE hProcess, const void *dst_addr, void *buffer, size_t size) {
     DWORD oldprotect;
-    size_t BytesRead;
+    SIZE_T BytesRead;
     VirtualProtectEx(hProcess, (void*)dst_addr, size, PAGE_EXECUTE_READWRITE, &oldprotect);
     ReadProcessMemory(hProcess, dst_addr, buffer, size, &BytesRead);
     VirtualProtectEx(hProcess, (void*)dst_addr, size, oldprotect, &oldprotect);
@@ -23,7 +23,7 @@ size_t ReadMemory(HANDLE hProcess, const void *dst_addr, void *buffer, size_t si
 
 size_t WriteMemory(HANDLE hProcess, void *dst_addr, const void *buffer, size_t size) {
     DWORD oldprotect;
-    size_t BytesWritten;
+    SIZE_T BytesWritten;
     VirtualProtectEx(hProcess, dst_addr, size, PAGE_EXECUTE_READWRITE, &oldprotect);
     WriteProcessMemory(hProcess, dst_addr, buffer, size, &BytesWritten);
     VirtualProtectEx(hProcess, dst_addr, size, oldprotect, &oldprotect);
