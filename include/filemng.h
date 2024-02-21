@@ -29,7 +29,7 @@ public:
     ~filemng() { if(fp != nullptr) _close(fp); }
 
     filemng(const filemng&) = delete;
-    filemng &operator =(const filemng&) =delete;
+    filemng &operator =(const filemng&) = delete;
 
     filemng &operator =(FILE *const fp) {
         if(fp == nullptr) {
