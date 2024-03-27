@@ -31,12 +31,10 @@ public:
     filemng(const filemng&) = delete;
     filemng &operator =(const filemng&) = delete;
 
-    filemng &operator =(FILE *const fp) {
+    filemng &operator =(FILE *fp) {
         if(fp == nullptr) {
             throw std::runtime_error("[!]fp is a nullptr");
         }
-        if(filemng::fp == fp)
-            return *this;
         if(filemng::fp != nullptr)
             _close(filemng::fp);
         filemng::fp = fp;
@@ -48,10 +46,6 @@ public:
     filemng &operator =(filemng &&f) noexcept {
         if(&f == this)
             return *this;
-        if(fp == f.fp) {
-            f.fp = nullptr;
-            return *this;
-        }
         if(fp != nullptr)
             _close(fp);
         fp = f.fp;
