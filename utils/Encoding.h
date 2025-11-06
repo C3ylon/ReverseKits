@@ -90,14 +90,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if_t<std::is_integral_v<T>, ConsoleIoMng &> operator <<(T val) {
-        std::wstring wStr = std::to_wstring(val);
-        writeWideString(hOut, wStr);
-        return *this;
-    }
-
-    template<typename T>
-    std::enable_if_t<std::is_floating_point_v<T>, ConsoleIoMng &> operator <<(T val) {
+    std::enable_if_t<std::is_arithmetic_v<T>, ConsoleIoMng &> operator <<(T val) {
         std::wstring wStr = std::to_wstring(val);
         writeWideString(hOut, wStr);
         return *this;
