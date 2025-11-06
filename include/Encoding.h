@@ -58,17 +58,21 @@ public:
         return *this;
     }
 
+    ConsoleIoMng &operator <<(ConsoleIoMng &(*pEndl)(ConsoleIoMng &)) {
+        return pEndl(*this);
+    }
+
     template<typename T>
     std::enable_if_t<std::is_arithmetic_v<T>, ConsoleIoMng &> operator <<(T val) {
         std::wstring wStr = std::to_wstring(val);
-        writeWideString(hOut, wStr);
+        writeWideString(wStr);
         return *this;
     }
 
 private:
     void writeWideString(const std::wstring& str) {
-        DWORD chars_written;
-        WriteConsoleW(hOut, str.c_str(), str.length(), &chars_written, NULL);
+        DWORD charsWritten;
+        WriteConsoleW(hOut, str.c_str(), str.length(), &charsWritten, NULL);
     }
 
     std::wstring readWideString() {
@@ -92,8 +96,11 @@ private:
     HANDLE hOut;
 };
 
+inline ConsoleIoMng &endl(ConsoleIoMng &outIo) {
+    outIo << L"\r\n";
+    return outIo;
 }
 
-
+}
 
 #endif
