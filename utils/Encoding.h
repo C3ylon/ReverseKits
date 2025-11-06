@@ -29,37 +29,6 @@ inline std::string wstringToGbk(const std::wstring &wstr) {
     return gbk;
 }
 
-namespace {
-// 辅助函数：使用 WriteConsoleW 输出宽字符串
-void writeWideString(HANDLE hOut, const std::wstring& str) {
-    DWORD chars_written;
-    WriteConsoleW(hOut, str.c_str(), str.length(), &chars_written, NULL);
-}
-
-// 辅助函数：使用 ReadConsoleW 读取宽字符串
-std::wstring readWideString(HANDLE hIn) {
-    // 假设输入缓冲区最大为 1024 宽字符
-    const int MAX_WCHARS = 1024;
-    std::vector<wchar_t> buffer(MAX_WCHARS);
-    DWORD chars_read = 0;
-    // 使用 ReadConsoleW 读取输入
-    if (ReadConsoleW(hIn, &buffer[0], MAX_WCHARS - 1, &chars_read, NULL)) {
-        // 确保字符串正确终止
-        buffer[chars_read] = L'\0';
-
-        // ReadConsoleW 通常会包含用户按下的回车换行符（\r\n），需要移除
-        if (chars_read >= 2 && buffer[chars_read - 2] == L'\r' && buffer[chars_read - 1] == L'\n') {
-            chars_read -= 2;
-        } else if (chars_read >= 1 && (buffer[chars_read - 1] == L'\r' || buffer[chars_read - 1] == L'\n')) {
-            chars_read -= 1;
-        }
-
-        return std::wstring(buffer.begin(), buffer.begin() + chars_read);
-    }
-    return L""; // 读取失败
-}
-}
-
 class ConsoleIoMng {
 public:
     ConsoleIoMng() {
@@ -73,19 +42,19 @@ public:
     }
 
     ConsoleIoMng &operator >>(std::string &s) {
-        std::wstring wStr = readWideString(hIn);
+        std::wstring wStr = readWideString();
         s = wstringToUtf8(wStr);
         return *this;
     }
 
     ConsoleIoMng &operator <<(const std::wstring &s) {
-        writeWideString(hOut, s);
+        writeWideString(s);
         return *this;
     }
 
     ConsoleIoMng &operator <<(const std::string &s) {
         std::wstring wStr = utf8ToWstring(s);
-        writeWideString(hOut, wStr);
+        writeWideString(wStr);
         return *this;
     }
 
@@ -94,6 +63,28 @@ public:
         std::wstring wStr = std::to_wstring(val);
         writeWideString(hOut, wStr);
         return *this;
+    }
+
+private:
+    void writeWideString(const std::wstring& str) {
+        DWORD chars_written;
+        WriteConsoleW(hOut, str.c_str(), str.length(), &chars_written, NULL);
+    }
+
+    std::wstring readWideString() {
+        constexpr int MAX_WCHARS = 1024;
+        std::vector<wchar_t> buffer(MAX_WCHARS);
+        DWORD charsRead = 0;
+        if (!ReadConsoleW(hIn, &buffer[0], MAX_WCHARS - 1, &charsRead, NULL)) {
+            return L"";
+        }
+        buffer[charsRead] = L'\0';
+        if (charsRead >= 2 && buffer[charsRead - 2] == L'\r' && buffer[charsRead - 1] == L'\n') {
+            charsRead -= 2;
+        } else if (charsRead >= 1 && (buffer[charsRead - 1] == L'\r' || buffer[charsRead - 1] == L'\n')) {
+            charsRead -= 1;
+        }
+        return std::wstring(buffer.begin(), buffer.begin() + charsRead);
     }
 
 private:
