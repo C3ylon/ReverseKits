@@ -10,6 +10,9 @@ namespace clre {
 
 inline std::wstring utf8ToWstring(const std::string &utf8Str) {
     int sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, utf8Str.c_str(), -1, nullptr, 0);
+    if (sizeNeeded <= 0) {
+        return L"";
+    }
     std::wstring wstr(sizeNeeded - 1, 0);
     MultiByteToWideChar(CP_UTF8, 0, utf8Str.c_str(), -1, &wstr[0], sizeNeeded);
     return wstr;
@@ -17,6 +20,9 @@ inline std::wstring utf8ToWstring(const std::string &utf8Str) {
 
 inline std::string wstringToUtf8(const std::wstring &wstr) {
     int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    if (sizeNeeded <= 0) {
+        return "";
+    }
     std::string utf8Str(sizeNeeded - 1, 0);
     WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, &utf8Str[0], sizeNeeded, nullptr, nullptr);
     return utf8Str;
@@ -24,6 +30,9 @@ inline std::string wstringToUtf8(const std::wstring &wstr) {
 
 inline std::string wstringToGbk(const std::wstring &wstr) {
     int sizeNeeded = WideCharToMultiByte(936, 0, wstr.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    if (sizeNeeded <= 0) {
+        return "";
+    }
     std::string gbk(sizeNeeded - 1, 0);
     WideCharToMultiByte(936, 0, wstr.c_str(), -1, &gbk[0], sizeNeeded, nullptr, nullptr);
     return gbk;
@@ -36,10 +45,7 @@ public:
         hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     }
 
-    ~ConsoleIoMng() {
-        CloseHandle(hIn);
-        CloseHandle(hOut);
-    }
+    ~ConsoleIoMng() = default;
 
     ConsoleIoMng &operator >>(std::string &s) {
         std::wstring wStr = readWideString();
@@ -97,7 +103,7 @@ private:
 };
 
 inline ConsoleIoMng &endl(ConsoleIoMng &outIo) {
-    outIo << L"\r\n";
+    outIo << L"\n";
     return outIo;
 }
 
