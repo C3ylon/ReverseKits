@@ -47,6 +47,11 @@ public:
 
     ~ConsoleIoMng() = default;
 
+    static ConsoleIoMng &instance() {
+        static ConsoleIoMng obj;
+        return obj;
+    }
+
     ConsoleIoMng &operator >>(std::string &s) {
         std::wstring wStr = readWideString();
         s = wstringToUtf8(wStr);
@@ -108,5 +113,7 @@ inline ConsoleIoMng &endl(ConsoleIoMng &outIo) {
 }
 
 }
+
+#define conio clre::ConsoleIoMng::instance()
 
 #endif
