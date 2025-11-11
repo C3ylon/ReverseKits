@@ -41,9 +41,22 @@ void traverseAllFiles(const std::wstring &directory, FuncFileOp &&fileOp, FuncFo
         }
     };
 
-    traverseFolder(directory, fileOp, Functor(fileOp, folderOp));
+    traverseFolder(directory, std::forward<FuncFileOp>(fileOp), Functor(fileOp, folderOp));
 }
 
+template <typename FuncFileOp, typename FuncFolderOp>
+void traverseAny(const std::wstring &directory, FuncFileOp &&fileOp, FuncFolderOp &&folderOp)
+{
+    DWORD attr = GetFileAttributesW(path.c_str());
+    if (attr == INVALID_FILE_ATTRIBUTES) {
+        return;
+    }
 
+    if (attr & FILE_ATTRIBUTE_DIRECTORY) {
+        traverseAllFiles(directory, std::forward<FuncFileOp>(fileOp), std::forward<FuncFolderOp>(folderOp));
+    } else {
+        fileOp(directory);
+    }
+}
 
 }
