@@ -2,9 +2,8 @@
 
 namespace clre {
 
-template <typename Func>
-void traverseDirectory(const std::wstring &directory, Func &&fileHandler)
-{
+template <typename FuncFileOp, typename FuncFolderOp>
+void traverseFolder(const std::wstring &directory, FuncFileOp &&fileOp, FuncFolderOp &&folderOp) {
     WIN32_FIND_DATAW findData;
     HANDLE hFind = INVALID_HANDLE_VALUE;
     std::wstring searchPath = directory + L"\\*";
@@ -20,13 +19,31 @@ void traverseDirectory(const std::wstring &directory, Func &&fileHandler)
         std::wstring fullPath = directory + L"\\" + itemName;
 
         if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            traverseDirectory(fullPath, std::forward<Func>(fileHandler));
+            folderOp(fullPath);
         } else {
-            fileHandler(fullPath);
+            fileOp(fullPath);
         }
     } while (FindNextFileW(hFind, &findData));
 
     FindClose(hFind);
 }
+
+template <typename FuncFileOp, typename FuncFolderOp>
+void traverseAllFiles(const std::wstring &directory, FuncFileOp &&fileOp, FuncFolderOp &&folderOp) {
+    class Functor {
+        FuncFileOp &fileOp;
+        FuncFolderOp &folderOp;
+    public:
+        Functor(FuncFileOp &fileOp, FuncFolderOp &folderOp) : fileOp(fileOp), folderOp(folderOp) { }
+        void operator()(const std::wstring path) const {
+            folderOp(path);
+            traverseFolder(path, fileOp, *this);
+        }
+    };
+
+    traverseFolder(directory, fileOp, Functor(fileOp, folderOp));
+}
+
+
 
 }
