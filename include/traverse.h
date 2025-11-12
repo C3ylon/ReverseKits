@@ -1,7 +1,7 @@
 #ifndef TRAVERSE__H_
 #define TRAVERSE__H_
 
-#include "encoding.h"
+#include <string>
 
 namespace clre {
 
