@@ -1,4 +1,7 @@
-#include "Encoding.h"
+#ifndef TRAVERSE__H_
+#define TRAVERSE__H_
+
+#include "encoding.h"
 
 namespace clre {
 
@@ -47,7 +50,7 @@ void traverseAllFiles(const std::wstring &directory, FuncFileOp &&fileOp, FuncFo
 template <typename FuncFileOp, typename FuncFolderOp>
 void traverseAny(const std::wstring &directory, FuncFileOp &&fileOp, FuncFolderOp &&folderOp)
 {
-    DWORD attr = GetFileAttributesW(path.c_str());
+    DWORD attr = GetFileAttributesW(directory.c_str());
     if (attr == INVALID_FILE_ATTRIBUTES) {
         return;
     }
@@ -60,3 +63,5 @@ void traverseAny(const std::wstring &directory, FuncFileOp &&fileOp, FuncFolderO
 }
 
 }
+
+#endif

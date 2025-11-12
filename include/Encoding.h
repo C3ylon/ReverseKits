@@ -74,7 +74,7 @@ public:
     }
 
     template<typename T>
-    std::enable_if_t<std::is_arithmetic_v<T>, ConsoleIoMng &> operator <<(T val) {
+    typename std::enable_if<std::is_arithmetic<T>::value, ConsoleIoMng &>::value operator <<(T val) {
         std::wstring wStr = std::to_wstring(val);
         writeWideString(wStr);
         return *this;
